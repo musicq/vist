@@ -1,0 +1,28 @@
+.input-box {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.input-box label {
+  font-size: 32px;
+}
+
+.input-box input {
+  height: 60px;
+  width: 400px;
+  border: 3px solid #cc7d7d;
+  margin-top: 10px;
+  font-size: 32px;
+  transition: border .5s ease;
+}
+
+.input-box input:focus {
+  border: 6px solid #cc3b56;
+  outline: 0;
+}
+
+.virtual-box {
+  max-width: 800px;
+  margin: 0 auto;
+  border: 3px solid lightblue;
+}
