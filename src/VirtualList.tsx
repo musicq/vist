@@ -1,7 +1,7 @@
-import React from 'react';
+import * as React from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, Observable } from 'rxjs';
 import { filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
-import './VirtualList.scss';
+import style from './VirtualList.css';
 
 interface IVirtualListOptions {
   height: number;
@@ -14,16 +14,20 @@ interface IVirtualListProps<T> {
   style?: any;
 }
 
-type DataItem<T> = { origin: T, $index: number, $pos: number };
+interface IDataItem<T> {
+  origin: T,
+  $index: number,
+  $pos: number
+}
 
 interface IVirtualListState<T> {
-  data: DataItem<T>[];
+  data: Array<IDataItem<T>>;
   scrollHeight: number;
 }
 
 export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T>>, IVirtualListState<T>> {
   state = {
-    data: [] as DataItem<T>[],
+    data: [] as Array<IDataItem<T>>,
     scrollHeight: 0
   };
 
@@ -80,8 +84,9 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // data slice in the view
     const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, actualRows$, shouldUpdate$).pipe(
       withLatestFrom(scrollDirection$),
+      // @ts-ignore
       map(([[data, options, actualRows, curFirstIndex], dir]) => {
-        let lastIndex = curFirstIndex + actualRows - 1;
+        const lastIndex = curFirstIndex + actualRows - 1;
 
         // TODO: optimize here, only change the corresponding element instead of change the whole list
         // reuse the exist element instead destroy and recreate one
@@ -106,12 +111,12 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
   render() {
     return (
-      <div className="virtual-list" ref={this.virtualListRef} style={this.props.style}>
-        <div className="virtual-list-container" style={{ height: this.state.scrollHeight }}>
+      <div className={style.VirtualList} ref={this.virtualListRef} style={this.props.style}>
+        <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
           {this.state.data.map(data =>
             <div
               key={data.$index}
-              className="virtual-list-placeholder"
+              className={style.VirtualListPlaceholder}
               style={{ transform: `translateY(${data.$pos}px)` }}
             >
               {(this.props.children as any)(data.origin)}

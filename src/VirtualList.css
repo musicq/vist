@@ -1,0 +1,12 @@
+.VirtualList {
+  overflow-y: auto;
+}
+
+.VirtualListContainer {
+  position: relative;
+}
+
+.VirtualListPlaceholder {
+  position: absolute;
+  width: 100%;
+}
