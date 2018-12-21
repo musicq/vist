@@ -1,0 +1,37 @@
+{
+  "name": "vist",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/jest": "23.3.10",
+    "@types/node": "10.12.17",
+    "@types/react": "16.7.17",
+    "@types/react-dom": "16.0.11",
+    "react": "^16.6.3",
+    "react-dom": "^16.6.3",
+    "react-scripts": "2.1.1",
+    "rxjs": "^6.3.3",
+    "typescript": "3.2.2"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "devDependencies": {
+    "node-sass": "^4.11.0",
+    "tslint": "^5.12.0",
+    "tslint-config-prettier": "^1.17.0",
+    "tslint-react": "^3.6.0"
+  }
+}
