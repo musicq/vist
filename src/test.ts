@@ -1,7 +1,8 @@
-import ExampleComponent from './'
+import { VirtualList } from './VirtualList';
 
-describe('ExampleComponent', () => {
+describe('VirtualList', () => {
   it('is truthy', () => {
-    expect(ExampleComponent).toBeTruthy()
-  })
-})
+    expect(VirtualList).toBeTruthy();
+  });
+});
+
