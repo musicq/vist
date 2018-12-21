@@ -35,9 +35,14 @@ class App extends Component {
       <div>
         <div className="input-box">
           <label>
-            Place enter the number (0 - 5000)
+            <h1>Please enter a number<br/>(0 - 5000)</h1>
             <br/>
-            <input placeholder="Place enter the number here" autoFocus type="text" onChange={this.onSearch} value={this.state.keyWord}/>
+            <input
+              placeholder="Try to enter a number"
+              autoFocus
+              type="text"
+              onChange={this.onSearch}
+              value={this.state.keyWord}/>
           </label>
         </div>
 
@@ -48,7 +53,7 @@ class App extends Component {
             style={{ height: 400 }}
           >
             {item => (
-              <p style={{ height: 59, margin: 0, borderBottom: '1px solid green' }}>
+              <p style={{ height: 59, }}>
                 No. {item}
               </p>
             )}
