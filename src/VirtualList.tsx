@@ -48,17 +48,18 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const virtualListElm = this.virtualListRef.current as HTMLElement;
 
     this.containerHeight$.next(virtualListElm.clientHeight);
+
+    // scroll events
     this.scrollWin$ = fromEvent(virtualListElm, 'scroll').pipe(
       startWith({ target: { scrollTop: this.lastScrollPos } })
     );
 
     // scroll direction Down/Up
     const scrollDirection$ = this.scrollWin$.pipe(
-      map(e => {
-        const scrollTop = (e.target as HTMLElement).scrollTop;
+      map(e => (e.target as HTMLElement).scrollTop),
+      map(scrollTop => {
         const dir = scrollTop - this.lastScrollPos;
         this.lastScrollPos = scrollTop;
-
         return dir > 0 ? 1 : -1;
       })
     );
@@ -74,30 +75,46 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       this.props.options$
     ).pipe(
       // the index of the top elements of the current list
-      map(([st, options]) => {
-        return Math.floor(st / options.height);
-      }),
+      map(([st, options]) => Math.floor(st / options.height)),
       // if the index changed, then update
       filter(curIndex => curIndex !== this.lastFirstIndex),
       // update the index
-      tap(curIndex => this.lastFirstIndex = curIndex)
+      tap(curIndex => this.lastFirstIndex = curIndex),
+      withLatestFrom(actualRows$),
+      map(([firstIndex, actualRows]) => {
+        const lastIndex = firstIndex + actualRows - 1;
+        return [firstIndex, lastIndex];
+      })
     );
 
     // data slice in the view
-    const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, actualRows$, shouldUpdate$).pipe(
+    const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(
       withLatestFrom(scrollDirection$),
       // @ts-ignore
-      map(([[data, options, actualRows, curFirstIndex], dir]) => {
-        const lastIndex = curFirstIndex + actualRows - 1;
+      map(([[data, options, [firstIndex, lastIndex]], dir]) => {
+        const dataSlice = this.state.data;
 
-        // TODO: optimize here, only change the corresponding element instead of change the whole list
-        // reuse the exist element instead destroy and recreate one
         // fill the list
-        return data.slice(curFirstIndex, lastIndex).map(item => ({
-          origin: item,
-          $pos: curFirstIndex * options.height,
-          $index: curFirstIndex++
-        }));
+        if (!dataSlice.length) {
+          return data.slice(firstIndex, lastIndex + 1).map(item => ({
+            origin: item,
+            $pos: firstIndex * options.height,
+            $index: firstIndex++
+          }));
+        }
+
+        // reuse the existing elements
+        const diffSliceIndexes = this.getDifferenceIndexes(dataSlice, firstIndex, lastIndex);
+        let newIndex = dir > 0 ? lastIndex - diffSliceIndexes.length + 1 : firstIndex;
+
+        diffSliceIndexes.forEach(index => {
+          const item = dataSlice[index];
+          item.origin = data[newIndex];
+          item.$pos = newIndex * options.height;
+          item.$index = newIndex++;
+        });
+
+        return dataSlice;
       })
     );
 
@@ -133,5 +150,17 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
         </div>
       </div>
     );
+  }
+
+  private getDifferenceIndexes(slice: Array<IDataItem<T>>, firstIndex: number, lastIndex: number): number[] {
+    const indexes: number[] = [];
+
+    slice.forEach((item, i) => {
+      if (item.$index < firstIndex || item.$index > lastIndex) {
+        indexes.push(i);
+      }
+    });
+
+    return indexes;
   }
 }

@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { VirtualList } from 'vist';
 
-const data = new Array(5000).fill(0).map((_, i) => i);
+const data = new Array(50).fill(0).map((_, i) => i);
 
 class App extends Component {
   state = {
