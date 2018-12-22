@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { BehaviorSubject, combineLatest, fromEvent, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, fromEvent, Observable, Subscription } from 'rxjs';
 import { filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
@@ -36,11 +36,13 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   // container height
   private containerHeight$ = new BehaviorSubject<number>(0);
   // scroll events
-  private scrollWin$: Observable<any> = new BehaviorSubject(null);
+  private scrollWin$: Observable<any>;
   // last first index of data for the first element of the virtual list
   private lastFirstIndex = -1;
   // record the position of last scroll
   private lastScrollPos = 0;
+
+  private _subs: Subscription[] = [];
 
   componentDidMount() {
     const virtualListElm = this.virtualListRef.current as HTMLElement;
@@ -105,8 +107,15 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // subscribe to update the view
-    combineLatest(dataInViewSlice$, scrollHeight$)
-      .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }));
+    this._subs.push(
+      combineLatest(dataInViewSlice$, scrollHeight$)
+        .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }))
+    );
+  }
+
+  componentWillUnmount() {
+    this._subs.forEach(stream$ => stream$.unsubscribe());
+    this.containerHeight$.complete();
   }
 
   render() {

@@ -78,12 +78,11 @@ var VirtualList = /** @class */ (function (_super) {
         _this.virtualListRef = React.createRef();
         // container height
         _this.containerHeight$ = new rxjs.BehaviorSubject(0);
-        // scroll events
-        _this.scrollWin$ = new rxjs.BehaviorSubject(null);
         // last first index of data for the first element of the virtual list
         _this.lastFirstIndex = -1;
         // record the position of last scroll
         _this.lastScrollPos = 0;
+        _this._subs = [];
         return _this;
     }
     VirtualList.prototype.componentDidMount = function () {
@@ -135,11 +134,15 @@ var VirtualList = /** @class */ (function (_super) {
             return data.length * option.height;
         }));
         // subscribe to update the view
-        rxjs.combineLatest(dataInViewSlice$, scrollHeight$)
+        this._subs.push(rxjs.combineLatest(dataInViewSlice$, scrollHeight$)
             .subscribe(function (_a) {
             var data = _a[0], scrollHeight = _a[1];
             return _this.setState({ data: data, scrollHeight: scrollHeight });
-        });
+        }));
+    };
+    VirtualList.prototype.componentWillUnmount = function () {
+        this._subs.forEach(function (stream$) { return stream$.unsubscribe(); });
+        this.containerHeight$.complete();
     };
     VirtualList.prototype.render = function () {
         var _this = this;

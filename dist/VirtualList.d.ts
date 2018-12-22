@@ -28,7 +28,9 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
     private scrollWin$;
     private lastFirstIndex;
     private lastScrollPos;
+    private _subs;
     componentDidMount(): void;
+    componentWillUnmount(): void;
     render(): JSX.Element;
 }
 export {};
