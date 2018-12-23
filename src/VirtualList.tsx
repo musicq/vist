@@ -6,6 +6,7 @@ import style from './VirtualList.css';
 interface IVirtualListOptions {
   height: number;
   spare?: number;
+  resetOnDataChange?: boolean;
 }
 
 interface IVirtualListProps<T> {
@@ -69,6 +70,15 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       map(([ch, option]) => Math.ceil(ch / option.height) + (option.spare || 3))
     );
 
+    this._subs.push(
+      this.props.data$.pipe(withLatestFrom(this.props.options$))
+        .subscribe(([_, options]) => {
+          if (options.resetOnDataChange) {
+            virtualListElm.scrollTo(0, 0);
+          }
+        })
+    );
+
     // if it's necessary to update the view
     const shouldUpdate$ = combineLatest(
       this.scrollWin$.pipe(map(() => virtualListElm.scrollTop)),
@@ -78,7 +88,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     ).pipe(
       // the index of the top elements of the current list
       map(([st, options, data, actualRows]) => {
-        let curIndex = Math.floor(st / options.height);
+        const curIndex = Math.floor(st / options.height);
         // the first index of the virtualList on the last screen
         const maxIndex = data.length - actualRows;
         return curIndex > maxIndex ? maxIndex : curIndex;
@@ -97,7 +107,6 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // data slice in the view
     const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(
       withLatestFrom(scrollDirection$),
-      // @ts-ignore
       map(([[data, options, [firstIndex, lastIndex]], dir]) => {
         const dataSlice = this.state.data;
 
