@@ -2,7 +2,7 @@
 
 > Virtual-list component build with react and rxjs
 
-[![NPM](https://img.shields.io/npm/v/vist.svg)](https://www.npmjs.com/package/vist) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![NPM](https://img.shields.io/npm/v/vist.svg)](https://www.npmjs.com/package/vist)
 
 ## Install
 
