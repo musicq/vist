@@ -191,11 +191,14 @@ var VirtualList = /** @class */ (function (_super) {
             return Math.ceil(ch / option.height) + (option.spare || 3);
         }));
         // if it's necessary to update the view
-        var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), this.props.options$).pipe(
+        var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), this.props.options$, this.props.data$, actualRows$).pipe(
         // the index of the top elements of the current list
         operators.map(function (_a) {
-            var st = _a[0], options = _a[1];
-            return Math.floor(st / options.height);
+            var st = _a[0], options = _a[1], data = _a[2], actualRows = _a[3];
+            var curIndex = Math.floor(st / options.height);
+            // the first index of the virtualList on the last screen
+            var maxIndex = data.length - actualRows;
+            return curIndex > maxIndex ? maxIndex : curIndex;
         }), 
         // if the index changed, then update
         operators.filter(function (curIndex) { return curIndex !== _this.lastFirstIndex; }), 

@@ -72,10 +72,17 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // if it's necessary to update the view
     const shouldUpdate$ = combineLatest(
       this.scrollWin$.pipe(map(() => virtualListElm.scrollTop)),
-      this.props.options$
+      this.props.options$,
+      this.props.data$,
+      actualRows$
     ).pipe(
       // the index of the top elements of the current list
-      map(([st, options]) => Math.floor(st / options.height)),
+      map(([st, options, data, actualRows]) => {
+        let curIndex = Math.floor(st / options.height);
+        // the first index of the virtualList on the last screen
+        const maxIndex = data.length - actualRows;
+        return curIndex > maxIndex ? maxIndex : curIndex;
+      }),
       // if the index changed, then update
       filter(curIndex => curIndex !== this.lastFirstIndex),
       // update the index
