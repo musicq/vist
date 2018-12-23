@@ -1,9 +1,16 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feat: support scroll to top when data is change
 import * as React from 'react';
 import { Observable } from 'rxjs';
 interface IVirtualListOptions {
     height: number;
     spare?: number;
+<<<<<<< HEAD
+=======
+    resetOnDataChange?: boolean;
+>>>>>>> feat: support scroll to top when data is change
 }
 interface IVirtualListProps<T> {
     data$: Observable<T[]>;
@@ -33,6 +40,7 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
     componentDidMount(): void;
     componentWillUnmount(): void;
     render(): JSX.Element;
+<<<<<<< HEAD
 }
 export {};
 =======
@@ -74,3 +82,8 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
 }
 export {};
 >>>>>>> (WIP)feat: reuse the exist elements
+=======
+    private getDifferenceIndexes;
+}
+export {};
+>>>>>>> feat: support scroll to top when data is change

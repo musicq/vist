@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { VirtualList } from 'vist';
 
-const data = new Array(50).fill(0).map((_, i) => i);
+const data = new Array(5000).fill(0).map((_, i) => i);
 
 class App extends Component {
   state = {
@@ -23,7 +23,10 @@ class App extends Component {
     combineLatest(this.data$, this.search$).pipe(
       tap(([data, keyWord]) => this.setState({ keyWord })),
       map(([data, keyWord]) => data.filter(item => item.toString().includes(keyWord)))
-    ).subscribe(data => this.state.data.next(data));
+    ).subscribe(data => {
+      this.state.data.next([]);
+      this.state.data.next(data);
+    });
   }
 
   onSearch(e) {
@@ -49,11 +52,11 @@ class App extends Component {
         <div className="virtual-box">
           <VirtualList
             data$={this.state.data}
-            options$={of({ height: 60 })}
+            options$={of({ height: 60, resetOnDataChange: true })}
             style={{ height: 400 }}
           >
             {item => (
-              <p style={{ height: 59, }}>
+              <p style={{ height: 59 }}>
                 No. {item}
               </p>
             )}

@@ -67,6 +67,9 @@ var style = {"VirtualList":"VirtualList_VirtualList__1SA8j","VirtualListContaine
 styleInject(css);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feat: support scroll to top when data is change
 var VirtualList = /** @class */ (function (_super) {
     __extends(VirtualList, _super);
     function VirtualList() {
@@ -90,10 +93,17 @@ var VirtualList = /** @class */ (function (_super) {
         var _this = this;
         var virtualListElm = this.virtualListRef.current;
         this.containerHeight$.next(virtualListElm.clientHeight);
+<<<<<<< HEAD
         this.scrollWin$ = rxjs.fromEvent(virtualListElm, 'scroll').pipe(operators.startWith({ target: { scrollTop: this.lastScrollPos } }));
         // scroll direction Down/Up
         var scrollDirection$ = this.scrollWin$.pipe(operators.map(function (e) {
             var scrollTop = e.target.scrollTop;
+=======
+        // scroll events
+        this.scrollWin$ = rxjs.fromEvent(virtualListElm, 'scroll').pipe(operators.startWith({ target: { scrollTop: this.lastScrollPos } }));
+        // scroll direction Down/Up
+        var scrollDirection$ = this.scrollWin$.pipe(operators.map(function (e) { return e.target.scrollTop; }), operators.map(function (scrollTop) {
+>>>>>>> feat: support scroll to top when data is change
             var dir = scrollTop - _this.lastScrollPos;
             _this.lastScrollPos = scrollTop;
             return dir > 0 ? 1 : -1;
@@ -103,16 +113,36 @@ var VirtualList = /** @class */ (function (_super) {
             var ch = _a[0], option = _a[1];
             return Math.ceil(ch / option.height) + (option.spare || 3);
         }));
+<<<<<<< HEAD
         // if it's necessary to update the view
         var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), this.props.options$).pipe(
         // the index of the top elements of the current list
         operators.map(function (_a) {
             var st = _a[0], options = _a[1];
             return Math.floor(st / options.height);
+=======
+        this._subs.push(this.props.data$.pipe(operators.withLatestFrom(this.props.options$))
+            .subscribe(function (_a) {
+            var _ = _a[0], options = _a[1];
+            if (options.resetOnDataChange) {
+                virtualListElm.scrollTo(0, 0);
+            }
+        }));
+        // if it's necessary to update the view
+        var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), this.props.options$, this.props.data$, actualRows$).pipe(
+        // the index of the top elements of the current list
+        operators.map(function (_a) {
+            var st = _a[0], options = _a[1], data = _a[2], actualRows = _a[3];
+            var curIndex = Math.floor(st / options.height);
+            // the first index of the virtualList on the last screen
+            var maxIndex = data.length - actualRows;
+            return curIndex > maxIndex ? maxIndex : curIndex;
+>>>>>>> feat: support scroll to top when data is change
         }), 
         // if the index changed, then update
         operators.filter(function (curIndex) { return curIndex !== _this.lastFirstIndex; }), 
         // update the index
+<<<<<<< HEAD
         operators.tap(function (curIndex) { return _this.lastFirstIndex = curIndex; }));
         // data slice in the view
         var dataInViewSlice$ = rxjs.combineLatest(this.props.data$, this.props.options$, actualRows$, shouldUpdate$).pipe(operators.withLatestFrom(scrollDirection$), 
@@ -128,6 +158,35 @@ var VirtualList = /** @class */ (function (_super) {
                 $pos: curFirstIndex * options.height,
                 $index: curFirstIndex++
             }); });
+=======
+        operators.tap(function (curIndex) { return _this.lastFirstIndex = curIndex; }), operators.withLatestFrom(actualRows$), operators.map(function (_a) {
+            var firstIndex = _a[0], actualRows = _a[1];
+            var lastIndex = firstIndex + actualRows - 1;
+            return [firstIndex, lastIndex];
+        }));
+        // data slice in the view
+        var dataInViewSlice$ = rxjs.combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(operators.withLatestFrom(scrollDirection$), operators.map(function (_a) {
+            var _b = _a[0], data = _b[0], options = _b[1], _c = _b[2], firstIndex = _c[0], lastIndex = _c[1], dir = _a[1];
+            var dataSlice = _this.state.data;
+            // fill the list
+            if (!dataSlice.length) {
+                return data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
+                    origin: item,
+                    $pos: firstIndex * options.height,
+                    $index: firstIndex++
+                }); });
+            }
+            // reuse the existing elements
+            var diffSliceIndexes = _this.getDifferenceIndexes(dataSlice, firstIndex, lastIndex);
+            var newIndex = dir > 0 ? lastIndex - diffSliceIndexes.length + 1 : firstIndex;
+            diffSliceIndexes.forEach(function (index) {
+                var item = dataSlice[index];
+                item.origin = data[newIndex];
+                item.$pos = newIndex * options.height;
+                item.$index = newIndex++;
+            });
+            return dataSlice;
+>>>>>>> feat: support scroll to top when data is change
         }));
         // total height of the virtual list
         var scrollHeight$ = rxjs.combineLatest(this.props.data$, this.props.options$).pipe(operators.map(function (_a) {
@@ -152,6 +211,7 @@ var VirtualList = /** @class */ (function (_super) {
                 return React.createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, _this.props.children(data.origin));
             }))));
     };
+<<<<<<< HEAD
     return VirtualList;
 =======
 var VirtualList = /** @class */ (function (_super) {
@@ -269,6 +329,18 @@ var VirtualList = /** @class */ (function (_super) {
     };
     return VirtualList;
 >>>>>>> (WIP)feat: reuse the exist elements
+=======
+    VirtualList.prototype.getDifferenceIndexes = function (slice, firstIndex, lastIndex) {
+        var indexes = [];
+        slice.forEach(function (item, i) {
+            if (item.$index < firstIndex || item.$index > lastIndex) {
+                indexes.push(i);
+            }
+        });
+        return indexes;
+    };
+    return VirtualList;
+>>>>>>> feat: support scroll to top when data is change
 }(React.Component));
 
 //# sourceMappingURL=index.js.map
