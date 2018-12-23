@@ -122,9 +122,9 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     return (
       <div className={style.VirtualList} ref={this.virtualListRef} style={this.props.style}>
         <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
-          {this.state.data.map(data =>
+          {this.state.data.map((data, i) =>
             <div
-              key={data.$index}
+              key={i}
               className={style.VirtualListPlaceholder}
               style={{ transform: `translateY(${data.$pos}px)` }}
             >

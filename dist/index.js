@@ -147,12 +147,14 @@ var VirtualList = /** @class */ (function (_super) {
     VirtualList.prototype.render = function () {
         var _this = this;
         return (React.createElement("div", { className: style.VirtualList, ref: this.virtualListRef, style: this.props.style },
-            React.createElement("div", { className: style.VirtualListContainer, style: { height: this.state.scrollHeight } }, this.state.data.map(function (data) {
-                return React.createElement("div", { key: data.$index, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, _this.props.children(data.origin));
+            React.createElement("div", { className: style.VirtualListContainer, style: { height: this.state.scrollHeight } }, this.state.data.map(function (data, i) {
+                return React.createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, _this.props.children(data.origin));
             }))));
     };
     return VirtualList;
 }(React.Component));
+
+//# sourceMappingURL=index.js.map
 
 exports.VirtualList = VirtualList;
 //# sourceMappingURL=index.js.map
