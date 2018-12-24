@@ -32,6 +32,8 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     scrollHeight: 0
   };
 
+  // record data reference
+  private dataReference: T[] = [];
   // container dom instance
   private virtualListRef = React.createRef<HTMLDivElement>();
   // container height
@@ -70,6 +72,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       map(([ch, option]) => Math.ceil(ch / option.height) + (option.spare || 3))
     );
 
+    // let the scroll bar stick the top
     this._subs.push(
       this.props.data$.pipe(withLatestFrom(this.props.options$))
         .subscribe(([_, options]) => {
@@ -109,9 +112,15 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       withLatestFrom(scrollDirection$),
       map(([[data, options, [firstIndex, lastIndex]], dir]) => {
         const dataSlice = this.state.data;
+        // compare data reference, if not the same, then update the list
+        const dataReferenceIsSame = data === this.dataReference;
 
         // fill the list
-        if (!dataSlice.length) {
+        if (!dataSlice.length || !dataReferenceIsSame) {
+          if (!dataReferenceIsSame) {
+            this.dataReference = data;
+          }
+
           return data.slice(firstIndex, lastIndex + 1).map(item => ({
             origin: item,
             $pos: firstIndex * options.height,
