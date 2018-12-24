@@ -3,15 +3,13 @@ import { BehaviorSubject, combineLatest, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { VirtualList } from 'vist';
 
-const data = new Array(5000).fill(0).map((_, i) => i);
-
 class App extends Component {
   state = {
     data: new BehaviorSubject([]),
     keyWord: ''
   };
   search$ = new BehaviorSubject(this.state.keyWord);
-  data$ = of(data);
+  data$ = new BehaviorSubject([]);
 
   constructor(props) {
     super(props);
@@ -20,9 +18,20 @@ class App extends Component {
   }
 
   componentDidMount() {
+    fetch('https://jsonplaceholder.typicode.com/photos')
+      .then(res => res.json())
+      .then(data => this.data$.next(data))
+      .catch(console.error);
+
     combineLatest(this.data$, this.search$).pipe(
       tap(([data, keyWord]) => this.setState({ keyWord })),
-      map(([data, keyWord]) => data.filter(item => item.toString().includes(keyWord)))
+      map(([data, keyWord]) => data.filter(item => {
+        if (Number.isNaN(+keyWord)) {
+          return item.title.includes(keyWord);
+        }
+
+        return item.id.toString().includes(keyWord);
+      }) || [])
     ).subscribe(data => this.state.data.next(data));
   }
 
@@ -32,30 +41,34 @@ class App extends Component {
 
   render() {
     return (
-      <div>
+      <div className="container">
         <div className="input-box">
-          <label>
-            <h1>Please enter a number<br/>(0 - 5000)</h1>
-            <br/>
-            <input
-              placeholder="Try to enter a number"
-              autoFocus
-              type="text"
-              onChange={this.onSearch}
-              value={this.state.keyWord}/>
-          </label>
+          <input
+            placeholder="Type to search..."
+            autoFocus
+            type="text"
+            onChange={this.onSearch}
+            value={this.state.keyWord}/>
         </div>
 
         <div className="virtual-box">
           <VirtualList
             data$={this.state.data}
-            options$={of({ height: 60, resetOnDataChange: true })}
-            style={{ height: 400 }}
+            options$={of({ height: 180, resetOnDataChange: true })}
+            style={{ height: '50vh' }}
           >
             {item => (
-              <p style={{ height: 59 }}>
-                No. {item}
-              </p>
+              <div className="card">
+                <a href={item.url}>
+                  <div className="thumbnail">
+                    <img src={item.thumbnailUrl} alt={item.title}/>
+                  </div>
+                  <div className="content">
+                    <p>{item.title}</p>
+                    <p>No.{item.id}</p>
+                  </div>
+                </a>
+              </div>
             )}
           </VirtualList>
         </div>
