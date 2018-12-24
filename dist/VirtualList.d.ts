@@ -24,6 +24,7 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
         data: IDataItem<T>[];
         scrollHeight: number;
     };
+    private stateData;
     private dataReference;
     private virtualListRef;
     private containerHeight$;
