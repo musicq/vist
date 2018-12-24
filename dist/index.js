@@ -154,7 +154,5 @@ var VirtualList = /** @class */ (function (_super) {
     return VirtualList;
 }(React.Component));
 
-//# sourceMappingURL=index.js.map
-
 exports.VirtualList = VirtualList;
 //# sourceMappingURL=index.js.map

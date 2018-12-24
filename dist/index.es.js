@@ -150,7 +150,5 @@ var VirtualList = /** @class */ (function (_super) {
     return VirtualList;
 }(Component));
 
-//# sourceMappingURL=index.js.map
-
 export { VirtualList };
 //# sourceMappingURL=index.es.js.map
