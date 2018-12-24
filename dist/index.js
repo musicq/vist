@@ -167,7 +167,11 @@ var VirtualList = /** @class */ (function (_super) {
         this._subs.push(rxjs.combineLatest(dataInViewSlice$, scrollHeight$)
             .subscribe(function (_a) {
             var data = _a[0], scrollHeight = _a[1];
-            return _this.setState({ data: data, scrollHeight: scrollHeight });
+            return _this.setState({
+                // filter the undefined data
+                data: data.filter(function (x) { return x.origin !== undefined; }),
+                scrollHeight: scrollHeight
+            });
         }));
     };
     VirtualList.prototype.componentWillUnmount = function () {
