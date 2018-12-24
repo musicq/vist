@@ -151,7 +151,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // subscribe to update the view
     this._subs.push(
       combineLatest(dataInViewSlice$, scrollHeight$)
-        .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }))
+        .subscribe(([data, scrollHeight]) => this.setState({
+          // filter the undefined data
+          data: data.filter(x => x.origin !== undefined),
+          scrollHeight
+        }))
     );
   }
 
