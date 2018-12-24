@@ -32,6 +32,8 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     scrollHeight: 0
   };
 
+  // record the data in state
+  private stateData: Array<IDataItem<T>> = [];
   // record data reference
   private dataReference: T[] = [];
   // container dom instance
@@ -92,8 +94,8 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       // the index of the top elements of the current list
       map(([st, options, data, actualRows]) => {
         const curIndex = Math.floor(st / options.height);
-        // the first index of the virtualList on the last screen
-        const maxIndex = data.length - actualRows;
+        // the first index of the virtualList on the last screen, if < 0, reset to 0
+        const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
         return curIndex > maxIndex ? maxIndex : curIndex;
       }),
       // if the index changed, then update
@@ -111,7 +113,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(
       withLatestFrom(scrollDirection$),
       map(([[data, options, [firstIndex, lastIndex]], dir]) => {
-        const dataSlice = this.state.data;
+        const dataSlice = this.stateData;
         // compare data reference, if not the same, then update the list
         const dataReferenceIsSame = data === this.dataReference;
 
@@ -121,7 +123,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
             this.dataReference = data;
           }
 
-          return data.slice(firstIndex, lastIndex + 1).map(item => ({
+          return this.stateData = data.slice(firstIndex, lastIndex + 1).map(item => ({
             origin: item,
             $pos: firstIndex * options.height,
             $index: firstIndex++
@@ -139,7 +141,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
           item.$index = newIndex++;
         });
 
-        return dataSlice;
+        return this.stateData = dataSlice;
       })
     );
 
@@ -151,11 +153,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // subscribe to update the view
     this._subs.push(
       combineLatest(dataInViewSlice$, scrollHeight$)
-        .subscribe(([data, scrollHeight]) => this.setState({
-          // filter the undefined data
-          data: data.filter(x => x.origin !== undefined),
-          scrollHeight
-        }))
+        .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }))
     );
   }
 
@@ -174,7 +172,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
               className={style.VirtualListPlaceholder}
               style={{ transform: `translateY(${data.$pos}px)` }}
             >
-              {(this.props.children as any)(data.origin)}
+              {data.origin ? (this.props.children as any)(data.origin) : null}
             </div>)}
         </div>
       </div>
