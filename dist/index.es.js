@@ -74,6 +74,8 @@ var VirtualList = /** @class */ (function (_super) {
             data: [],
             scrollHeight: 0
         };
+        // record data reference
+        _this.dataReference = [];
         // container dom instance
         _this.virtualListRef = createRef();
         // container height
@@ -110,6 +112,7 @@ var VirtualList = /** @class */ (function (_super) {
             return Math.ceil(ch / option.height) + (option.spare || 3);
         }));
 <<<<<<< HEAD
+<<<<<<< HEAD
         // if it's necessary to update the view
         var shouldUpdate$ = combineLatest(this.scrollWin$.pipe(map(function () { return virtualListElm.scrollTop; })), this.props.options$).pipe(
         // the index of the top elements of the current list
@@ -117,6 +120,9 @@ var VirtualList = /** @class */ (function (_super) {
             var st = _a[0], options = _a[1];
             return Math.floor(st / options.height);
 =======
+=======
+        // let the scroll bar stick the top
+>>>>>>> fix: make the view update when data change
         this._subs.push(this.props.data$.pipe(withLatestFrom(this.props.options$))
             .subscribe(function (_a) {
             var _ = _a[0], options = _a[1];
@@ -164,8 +170,13 @@ var VirtualList = /** @class */ (function (_super) {
         var dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(withLatestFrom(scrollDirection$), map(function (_a) {
             var _b = _a[0], data = _b[0], options = _b[1], _c = _b[2], firstIndex = _c[0], lastIndex = _c[1], dir = _a[1];
             var dataSlice = _this.state.data;
+            // compare data reference, if not the same, then update the list
+            var dataReferenceIsSame = data === _this.dataReference;
             // fill the list
-            if (!dataSlice.length) {
+            if (!dataSlice.length || !dataReferenceIsSame) {
+                if (!dataReferenceIsSame) {
+                    _this.dataReference = data;
+                }
                 return data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
                     origin: item,
                     $pos: firstIndex * options.height,

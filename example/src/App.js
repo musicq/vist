@@ -23,10 +23,7 @@ class App extends Component {
     combineLatest(this.data$, this.search$).pipe(
       tap(([data, keyWord]) => this.setState({ keyWord })),
       map(([data, keyWord]) => data.filter(item => item.toString().includes(keyWord)))
-    ).subscribe(data => {
-      this.state.data.next([]);
-      this.state.data.next(data);
-    });
+    ).subscribe(data => this.state.data.next(data));
   }
 
   onSearch(e) {
