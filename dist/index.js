@@ -94,6 +94,16 @@ var VirtualList = /** @class */ (function (_super) {
     VirtualList.prototype.componentDidMount = function () {
         var _this = this;
         var virtualListElm = this.virtualListRef.current;
+        var options$ = this.props.options$.pipe(operators.tap(function (options) {
+            if (options.height === undefined) {
+                throw new Error('Vist needs a height property in options$');
+            }
+        }), operators.map(function (options) {
+            var opt = Object.assign({}, options);
+            opt.sticky = opt.sticky === undefined ? true : opt.sticky;
+            opt.spare = opt.spare === undefined ? 3 : opt.spare;
+            return opt;
+        }));
         // window resize
         this._subs.push(rxjs.fromEvent(window, 'resize').pipe(operators.startWith(null), operators.debounceTime(200), operators.map(function () { return _this.containerHeight$.next(virtualListElm.clientHeight); })).subscribe());
         // scroll events
@@ -105,20 +115,20 @@ var VirtualList = /** @class */ (function (_super) {
             return dir > 0 ? 1 : -1;
         }));
         // actual rows
-        var actualRows$ = rxjs.combineLatest(this.containerHeight$, this.props.options$).pipe(operators.map(function (_a) {
+        var actualRows$ = rxjs.combineLatest(this.containerHeight$, options$).pipe(operators.map(function (_a) {
             var ch = _a[0], option = _a[1];
             return Math.ceil(ch / option.height) + (option.spare || 3);
         }));
         // let the scroll bar stick the top
-        this._subs.push(this.props.data$.pipe(operators.withLatestFrom(this.props.options$))
+        this._subs.push(this.props.data$.pipe(operators.withLatestFrom(options$))
             .subscribe(function (_a) {
             var _ = _a[0], options = _a[1];
-            if (options.resetOnDataChange) {
+            if (options.sticky === undefined || options.sticky) {
                 virtualListElm.scrollTo(0, 0);
             }
         }));
         // if it's necessary to update the view
-        var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), this.props.options$, this.props.data$, actualRows$).pipe(
+        var shouldUpdate$ = rxjs.combineLatest(this.scrollWin$.pipe(operators.map(function () { return virtualListElm.scrollTop; })), options$, this.props.data$, actualRows$).pipe(
         // the index of the top elements of the current list
         operators.map(function (_a) {
             var st = _a[0], options = _a[1], data = _a[2], actualRows = _a[3];
@@ -142,7 +152,7 @@ var VirtualList = /** @class */ (function (_super) {
             return [firstIndex, lastIndex];
         }));
         // data slice in the view
-        var dataInViewSlice$ = rxjs.combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(operators.withLatestFrom(scrollDirection$, actualRows$), operators.map(function (_a) {
+        var dataInViewSlice$ = rxjs.combineLatest(this.props.data$, options$, shouldUpdate$).pipe(operators.withLatestFrom(scrollDirection$, actualRows$), operators.map(function (_a) {
             var _b = _a[0], data = _b[0], options = _b[1], _c = _b[2], firstIndex = _c[0], lastIndex = _c[1], dir = _a[1], actualRows = _a[2];
             var dataSlice = _this.stateDataSnapshot;
             // compare data reference, if not the same, then update the list
@@ -173,7 +183,7 @@ var VirtualList = /** @class */ (function (_super) {
             return _this.stateDataSnapshot = dataSlice;
         }));
         // total height of the virtual list
-        var scrollHeight$ = rxjs.combineLatest(this.props.data$, this.props.options$).pipe(operators.map(function (_a) {
+        var scrollHeight$ = rxjs.combineLatest(this.props.data$, options$).pipe(operators.map(function (_a) {
             var data = _a[0], option = _a[1];
             return data.length * option.height;
         }));

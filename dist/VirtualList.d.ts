@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 interface IVirtualListOptions {
     height: number;
     spare?: number;
-    resetOnDataChange?: boolean;
+    sticky?: boolean;
 }
 interface IVirtualListProps<T> {
     data$: Observable<T[]>;
