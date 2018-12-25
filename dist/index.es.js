@@ -1,6 +1,6 @@
 import { createRef, createElement, Component } from 'react';
 import { BehaviorSubject, combineLatest, fromEvent } from 'rxjs';
-import { filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -70,8 +70,10 @@ var VirtualList = /** @class */ (function (_super) {
             data: [],
             scrollHeight: 0
         };
-        // record the data in state
-        _this.stateData = [];
+        // snapshot of data property in state
+        _this.stateDataSnapshot = [];
+        // snapshot of actualRows
+        _this.actualRowsSnapshot = 0;
         // record data reference
         _this.dataReference = [];
         // container dom instance
@@ -88,7 +90,8 @@ var VirtualList = /** @class */ (function (_super) {
     VirtualList.prototype.componentDidMount = function () {
         var _this = this;
         var virtualListElm = this.virtualListRef.current;
-        this.containerHeight$.next(virtualListElm.clientHeight);
+        // window resize
+        this._subs.push(fromEvent(window, 'resize').pipe(startWith(null), debounceTime(200), map(function () { return _this.containerHeight$.next(virtualListElm.clientHeight); })).subscribe());
         // scroll events
         this.scrollWin$ = fromEvent(virtualListElm, 'scroll').pipe(startWith({ target: { scrollTop: this.lastScrollPos } }));
         // scroll direction Down/Up
@@ -118,28 +121,37 @@ var VirtualList = /** @class */ (function (_super) {
             var curIndex = Math.floor(st / options.height);
             // the first index of the virtualList on the last screen, if < 0, reset to 0
             var maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
-            return curIndex > maxIndex ? maxIndex : curIndex;
+            return [curIndex > maxIndex ? maxIndex : curIndex, actualRows];
         }), 
-        // if the index changed, then update
-        filter(function (curIndex) { return curIndex !== _this.lastFirstIndex; }), 
+        // if the index or actual rows changed, then update
+        filter(function (_a) {
+            var curIndex = _a[0], actualRows = _a[1];
+            return curIndex !== _this.lastFirstIndex || actualRows !== _this.actualRowsSnapshot;
+        }), 
         // update the index
-        tap(function (curIndex) { return _this.lastFirstIndex = curIndex; }), withLatestFrom(actualRows$), map(function (_a) {
+        tap(function (_a) {
+            var curIndex = _a[0];
+            return _this.lastFirstIndex = curIndex;
+        }), map(function (_a) {
             var firstIndex = _a[0], actualRows = _a[1];
             var lastIndex = firstIndex + actualRows - 1;
             return [firstIndex, lastIndex];
         }));
         // data slice in the view
-        var dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(withLatestFrom(scrollDirection$), map(function (_a) {
-            var _b = _a[0], data = _b[0], options = _b[1], _c = _b[2], firstIndex = _c[0], lastIndex = _c[1], dir = _a[1];
-            var dataSlice = _this.stateData;
+        var dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(withLatestFrom(scrollDirection$, actualRows$), map(function (_a) {
+            var _b = _a[0], data = _b[0], options = _b[1], _c = _b[2], firstIndex = _c[0], lastIndex = _c[1], dir = _a[1], actualRows = _a[2];
+            var dataSlice = _this.stateDataSnapshot;
             // compare data reference, if not the same, then update the list
             var dataReferenceIsSame = data === _this.dataReference;
             // fill the list
-            if (!dataSlice.length || !dataReferenceIsSame) {
+            if (!dataSlice.length || !dataReferenceIsSame || actualRows !== _this.actualRowsSnapshot) {
                 if (!dataReferenceIsSame) {
                     _this.dataReference = data;
                 }
-                return _this.stateData = data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
+                if (actualRows !== _this.actualRowsSnapshot) {
+                    _this.actualRowsSnapshot = actualRows;
+                }
+                return _this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
                     origin: item,
                     $pos: firstIndex * options.height,
                     $index: firstIndex++
@@ -154,7 +166,7 @@ var VirtualList = /** @class */ (function (_super) {
                 item.$pos = newIndex * options.height;
                 item.$index = newIndex++;
             });
-            return _this.stateData = dataSlice;
+            return _this.stateDataSnapshot = dataSlice;
         }));
         // total height of the virtual list
         var scrollHeight$ = combineLatest(this.props.data$, this.props.options$).pipe(map(function (_a) {
