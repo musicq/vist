@@ -45,6 +45,18 @@ class App extends Component {
 }
 ```
 
+## Props
+
+* `data$`: `Observable<any>` data source of the list.
+* `options$`: `Observable<IVirtualListOptions>` options of the virtual list.
+* `style`: style of VirtualList container.
+
+IVirtualListOptions
+
+* `height`: `number` item height, it's **necessary**, vist use this property to calculate how many rows should be rendered actually.
+* `spare`: `number` default 3 spare rows out of the view.
+* `sticky`: `boolean` default true, which means whether scrollTop need to stick to the container's top when the data is changed.
+
 ## License
 
 MIT © [musicq](https://github.com/musicq)
