@@ -55,7 +55,7 @@ class App extends Component {
           <VirtualList
             data$={this.state.data}
             options$={of({ height: 180, resetOnDataChange: true })}
-            style={{ height: '50vh' }}
+            style={{ height: '70vh' }}
           >
             {item => (
               <div className="card">

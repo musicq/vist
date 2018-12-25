@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, Observable, Subscription } from 'rxjs';
-import { filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
 interface IVirtualListOptions {
@@ -32,8 +32,10 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     scrollHeight: 0
   };
 
-  // record the data in state
-  private stateData: Array<IDataItem<T>> = [];
+  // snapshot of data property in state
+  private stateDataSnapshot: Array<IDataItem<T>> = [];
+  // snapshot of actualRows
+  private actualRowsSnapshot: number = 0;
   // record data reference
   private dataReference: T[] = [];
   // container dom instance
@@ -52,7 +54,14 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   componentDidMount() {
     const virtualListElm = this.virtualListRef.current as HTMLElement;
 
-    this.containerHeight$.next(virtualListElm.clientHeight);
+    // window resize
+    this._subs.push(
+      fromEvent(window, 'resize').pipe(
+        startWith(null),
+        debounceTime(200),
+        map(() => this.containerHeight$.next(virtualListElm.clientHeight))
+      ).subscribe()
+    );
 
     // scroll events
     this.scrollWin$ = fromEvent(virtualListElm, 'scroll').pipe(
@@ -96,13 +105,12 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
         const curIndex = Math.floor(st / options.height);
         // the first index of the virtualList on the last screen, if < 0, reset to 0
         const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
-        return curIndex > maxIndex ? maxIndex : curIndex;
+        return [curIndex > maxIndex ? maxIndex : curIndex, actualRows];
       }),
-      // if the index changed, then update
-      filter(curIndex => curIndex !== this.lastFirstIndex),
+      // if the index or actual rows changed, then update
+      filter(([curIndex, actualRows]) => curIndex !== this.lastFirstIndex || actualRows !== this.actualRowsSnapshot),
       // update the index
-      tap(curIndex => this.lastFirstIndex = curIndex),
-      withLatestFrom(actualRows$),
+      tap(([curIndex]) => this.lastFirstIndex = curIndex),
       map(([firstIndex, actualRows]) => {
         const lastIndex = firstIndex + actualRows - 1;
         return [firstIndex, lastIndex];
@@ -111,19 +119,23 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
     // data slice in the view
     const dataInViewSlice$ = combineLatest(this.props.data$, this.props.options$, shouldUpdate$).pipe(
-      withLatestFrom(scrollDirection$),
-      map(([[data, options, [firstIndex, lastIndex]], dir]) => {
-        const dataSlice = this.stateData;
+      withLatestFrom(scrollDirection$, actualRows$),
+      map(([[data, options, [firstIndex, lastIndex]], dir, actualRows]) => {
+        const dataSlice = this.stateDataSnapshot;
         // compare data reference, if not the same, then update the list
         const dataReferenceIsSame = data === this.dataReference;
 
         // fill the list
-        if (!dataSlice.length || !dataReferenceIsSame) {
+        if (!dataSlice.length || !dataReferenceIsSame || actualRows !== this.actualRowsSnapshot) {
           if (!dataReferenceIsSame) {
             this.dataReference = data;
           }
 
-          return this.stateData = data.slice(firstIndex, lastIndex + 1).map(item => ({
+          if (actualRows !== this.actualRowsSnapshot) {
+            this.actualRowsSnapshot = actualRows;
+          }
+
+          return this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(item => ({
             origin: item,
             $pos: firstIndex * options.height,
             $index: firstIndex++
@@ -141,7 +153,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
           item.$index = newIndex++;
         });
 
-        return this.stateData = dataSlice;
+        return this.stateDataSnapshot = dataSlice;
       })
     );
 
