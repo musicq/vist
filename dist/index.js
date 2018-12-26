@@ -202,7 +202,7 @@ var VirtualList = /** @class */ (function (_super) {
         var _this = this;
         return (React.createElement("div", { className: style.VirtualList, ref: this.virtualListRef, style: this.props.style },
             React.createElement("div", { className: style.VirtualListContainer, style: { height: this.state.scrollHeight } }, this.state.data.map(function (data, i) {
-                return React.createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, data.origin ? _this.props.children(data.origin) : null);
+                return React.createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, data.origin !== undefined ? _this.props.children(data.origin) : null);
             }))));
     };
     VirtualList.prototype.getDifferenceIndexes = function (slice, firstIndex, lastIndex) {
