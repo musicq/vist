@@ -199,7 +199,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
               className={style.VirtualListPlaceholder}
               style={{ transform: `translateY(${data.$pos}px)` }}
             >
-              {data.origin ? (this.props.children as any)(data.origin) : null}
+              {data.origin !== undefined ? (this.props.children as any)(data.origin) : null}
             </div>)}
         </div>
       </div>
