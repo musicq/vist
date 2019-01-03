@@ -109,7 +109,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
         filter(options => Boolean(options.length)),
         map(options => options[options.length - 1]),
         filter(option => option.startIndex !== undefined),
-        map(option => (option.startIndex! - 1) * option.height)
+        map(option => option.startIndex! * option.height)
         // setTimeout to make sure the list is already rendered
       ).subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
     );
@@ -230,7 +230,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
               className={style.VirtualListPlaceholder}
               style={{ transform: `translateY(${data.$pos}px)` }}
             >
-              {data.origin !== undefined ? (this.props.children as any)(data.origin) : null}
+              {data.origin !== undefined ? (this.props.children as any)(data.origin, data.$index) : null}
             </div>)}
         </div>
       </div>
