@@ -54,7 +54,7 @@ class App extends Component {
         <div className="virtual-box">
           <VirtualList
             data$={this.state.data}
-            options$={of({ height: 180 })}
+            options$={of({ height: 180, startIndex: 3000 })}
             style={{ height: '70vh' }}
           >
             {item => (
