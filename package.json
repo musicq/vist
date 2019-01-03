@@ -1,6 +1,6 @@
 {
   "name": "vist",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Virtual-list component build with react and rxjs",
   "author": "musicq",
   "license": "MIT",

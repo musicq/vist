@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { Observable } from 'rxjs';
-interface IVirtualListOptions {
+export interface IVirtualListOptions {
     height: number;
     spare?: number;
     sticky?: boolean;
     startIndex?: number;
     resize?: boolean;
 }
-interface IVirtualListProps<T> {
+export interface IVirtualListProps<T> {
     data$: Observable<T[]>;
     options$: Observable<IVirtualListOptions>;
     style?: any;
