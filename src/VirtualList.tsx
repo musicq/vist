@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, S
 import { buffer, debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
-interface IVirtualListOptions {
+export interface IVirtualListOptions {
   height: number;
   spare?: number;
   sticky?: boolean;
@@ -11,7 +11,7 @@ interface IVirtualListOptions {
   resize?: boolean;
 }
 
-interface IVirtualListProps<T> {
+export interface IVirtualListProps<T> {
   data$: Observable<T[]>;
   options$: Observable<IVirtualListOptions>;
   style?: any;
