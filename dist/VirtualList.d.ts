@@ -4,6 +4,8 @@ interface IVirtualListOptions {
     height: number;
     spare?: number;
     sticky?: boolean;
+    startIndex?: number;
+    resize?: boolean;
 }
 interface IVirtualListProps<T> {
     data$: Observable<T[]>;
@@ -29,9 +31,9 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
     private dataReference;
     private virtualListRef;
     private containerHeight$;
-    private scrollWin$;
     private lastFirstIndex;
     private lastScrollPos;
+    private options$;
     private _subs;
     componentDidMount(): void;
     componentWillUnmount(): void;
