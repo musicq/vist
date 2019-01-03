@@ -37,7 +37,7 @@ class App extends Component {
         data$={this.state.data}
         options$={of({ height: 60 })}
         style={{ height: 400, border: '1px solid black' }}>
-        {item => <p style={{ height: 59, margin: 0, borderBottom: '1px solid green' }}>No. {item}</p>}
+        {(item, index) => <p style={{ height: 59, margin: 0, borderBottom: '1px solid green' }}>No. {index} - {item}</p>}
       </VirtualList>
     );
   }
