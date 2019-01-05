@@ -1,6 +1,6 @@
 import { createRef, createElement, Component } from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, ReplaySubject } from 'rxjs';
-import { buffer, debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { buffer, debounceTime, delay, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -116,7 +116,9 @@ var VirtualList = /** @class */ (function (_super) {
         // if data array is filled
         var hasData$ = this.props.data$.pipe(filter(function (data) { return Boolean(data.length); }));
         // buffer until the data is arrived, then every emit will trigger emit
-        var bufferStream$ = combineLatest(hasData$, this.options$);
+        var bufferStream$ = combineLatest(hasData$, 
+        // delay 1ms to ensure buffer trigger after options$
+        this.options$.pipe(delay(1)));
         // scroll to the given position
         this._subs.push(this.options$.pipe(buffer(bufferStream$), filter(function (options) { return Boolean(options.length); }), map(function (options) { return options[options.length - 1]; }), filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered

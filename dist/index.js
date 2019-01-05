@@ -120,7 +120,9 @@ var VirtualList = /** @class */ (function (_super) {
         // if data array is filled
         var hasData$ = this.props.data$.pipe(operators.filter(function (data) { return Boolean(data.length); }));
         // buffer until the data is arrived, then every emit will trigger emit
-        var bufferStream$ = rxjs.combineLatest(hasData$, this.options$);
+        var bufferStream$ = rxjs.combineLatest(hasData$, 
+        // delay 1ms to ensure buffer trigger after options$
+        this.options$.pipe(operators.delay(1)));
         // scroll to the given position
         this._subs.push(this.options$.pipe(operators.buffer(bufferStream$), operators.filter(function (options) { return Boolean(options.length); }), operators.map(function (options) { return options[options.length - 1]; }), operators.filter(function (option) { return option.startIndex !== undefined; }), operators.map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered
