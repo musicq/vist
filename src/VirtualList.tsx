@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, Subscription } from 'rxjs';
-import { buffer, debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { buffer, debounceTime, delay, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
 export interface IVirtualListOptions {
@@ -101,7 +101,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       filter(data => Boolean(data.length))
     );
     // buffer until the data is arrived, then every emit will trigger emit
-    const bufferStream$ = combineLatest(hasData$, this.options$);
+    const bufferStream$ = combineLatest(
+      hasData$,
+      // delay 1ms to ensure buffer trigger after options$
+      this.options$.pipe(delay(1))
+    );
 
     // scroll to the given position
     this._subs.push(
