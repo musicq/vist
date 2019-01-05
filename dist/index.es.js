@@ -115,10 +115,10 @@ var VirtualList = /** @class */ (function (_super) {
         var scrollTop$ = scrollEvent$.pipe(map(function (e) { return e.target.scrollTop; }));
         // if data array is filled
         var hasData$ = this.props.data$.pipe(filter(function (data) { return Boolean(data.length); }));
+        // buffer until the data is arrived, then every emit will trigger emit
+        var bufferStream$ = combineLatest(hasData$, this.options$);
         // scroll to the given position
-        this._subs.push(this.options$.pipe(
-        // buffer until the data is arrived
-        buffer(hasData$), filter(function (options) { return Boolean(options.length); }), map(function (options) { return options[options.length - 1]; }), filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
+        this._subs.push(this.options$.pipe(buffer(bufferStream$), filter(function (options) { return Boolean(options.length); }), map(function (options) { return options[options.length - 1]; }), filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered
         ).subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTo(0, scrollTop); }); }));
         // scroll direction Down/Up
@@ -136,7 +136,7 @@ var VirtualList = /** @class */ (function (_super) {
         this._subs.push(this.props.data$.pipe(withLatestFrom(this.options$), filter(function (_a) {
             var _ = _a[0], options = _a[1];
             return Boolean(options.sticky);
-        })).subscribe(function () { return virtualListElm.scrollTo(0, 0); }));
+        })).subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
         // data indexes in view
         var indexes$ = combineLatest(scrollTop$, this.options$).pipe(
         // the index of the top elements of the current list
