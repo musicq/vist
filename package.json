@@ -8,7 +8,11 @@
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
-  "keywords": ["rxjs", "react", "virtual-list"],
+  "keywords": [
+    "rxjs",
+    "react",
+    "virtual-list"
+  ],
   "engines": {
     "node": ">=8",
     "npm": ">=5"
@@ -20,7 +24,8 @@
     "start": "rollup -c -w",
     "prepare": "yarn run build",
     "predeploy": "cd example && yarn install && yarn run build",
-    "deploy": "gh-pages -d example/build"
+    "deploy": "gh-pages -d example/build",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0"
   },
   "peerDependencies": {
     "prop-types": "^15.5.4",
@@ -35,6 +40,7 @@
     "@types/react-dom": "^16.0.5",
     "babel-core": "^6.26.3",
     "babel-runtime": "^6.26.0",
+    "conventional-changelog-cli": "^2.0.11",
     "cross-env": "^5.1.4",
     "gh-pages": "^1.2.0",
     "react": "^16.4.1",
