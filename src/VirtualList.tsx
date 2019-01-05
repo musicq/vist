@@ -100,12 +100,13 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const hasData$ = this.props.data$.pipe(
       filter(data => Boolean(data.length))
     );
+    // buffer until the data is arrived, then every emit will trigger emit
+    const bufferStream$ = combineLatest(hasData$, this.options$);
 
     // scroll to the given position
     this._subs.push(
       this.options$.pipe(
-        // buffer until the data is arrived
-        buffer(hasData$),
+        buffer(bufferStream$),
         filter(options => Boolean(options.length)),
         map(options => options[options.length - 1]),
         filter(option => option.startIndex !== undefined),
@@ -133,7 +134,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       this.props.data$.pipe(
         withLatestFrom(this.options$),
         filter(([_, options]) => Boolean(options.sticky))
-      ).subscribe(() => virtualListElm.scrollTo(0, 0))
+      ).subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
     );
 
     // data indexes in view
