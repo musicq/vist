@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, Subscription } from 'rxjs';
-import { buffer, debounceTime, delay, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
 export interface IVirtualListOptions {
@@ -96,27 +96,21 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       map(e => (e.target as HTMLElement).scrollTop)
     );
 
-    // if data array is filled
-    const hasData$ = this.props.data$.pipe(
-      filter(data => Boolean(data.length))
-    );
-    // buffer until the data is arrived, then every emit will trigger emit
-    const bufferStream$ = combineLatest(
-      hasData$,
-      // delay 1ms to ensure buffer trigger after options$
-      this.options$.pipe(delay(1))
-    );
-
     // scroll to the given position
     this._subs.push(
       this.options$.pipe(
-        buffer(bufferStream$),
-        filter(options => Boolean(options.length)),
-        map(options => options[options.length - 1]),
         filter(option => option.startIndex !== undefined),
         map(option => option.startIndex! * option.height)
         // setTimeout to make sure the list is already rendered
       ).subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
+    );
+
+    // let the scroll bar stick the top
+    this._subs.push(
+      this.props.data$.pipe(
+        withLatestFrom(this.options$),
+        filter(([_, options]) => Boolean(options.sticky))
+      ).subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
     );
 
     // scroll direction Down/Up
@@ -131,14 +125,6 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // actual rows
     const actualRows$ = combineLatest(this.containerHeight$, this.options$).pipe(
       map(([ch, option]) => Math.ceil(ch / option.height) + (option.spare || 3))
-    );
-
-    // let the scroll bar stick the top
-    this._subs.push(
-      this.props.data$.pipe(
-        withLatestFrom(this.options$),
-        filter(([_, options]) => Boolean(options.sticky))
-      ).subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
     );
 
     // data indexes in view
