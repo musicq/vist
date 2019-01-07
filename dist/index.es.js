@@ -1,6 +1,6 @@
 import { createRef, createElement, Component } from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, ReplaySubject } from 'rxjs';
-import { buffer, debounceTime, delay, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -113,16 +113,15 @@ var VirtualList = /** @class */ (function (_super) {
         var scrollEvent$ = fromEvent(virtualListElm, 'scroll').pipe(startWith({ target: { scrollTop: this.lastScrollPos } }));
         // scroll top
         var scrollTop$ = scrollEvent$.pipe(map(function (e) { return e.target.scrollTop; }));
-        // if data array is filled
-        var hasData$ = this.props.data$.pipe(filter(function (data) { return Boolean(data.length); }));
-        // buffer until the data is arrived, then every emit will trigger emit
-        var bufferStream$ = combineLatest(hasData$, 
-        // delay 1ms to ensure buffer trigger after options$
-        this.options$.pipe(delay(1)));
         // scroll to the given position
-        this._subs.push(this.options$.pipe(buffer(bufferStream$), filter(function (options) { return Boolean(options.length); }), map(function (options) { return options[options.length - 1]; }), filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
+        this._subs.push(this.options$.pipe(filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered
         ).subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTo(0, scrollTop); }); }));
+        // let the scroll bar stick the top
+        this._subs.push(this.props.data$.pipe(withLatestFrom(this.options$), filter(function (_a) {
+            var _ = _a[0], options = _a[1];
+            return Boolean(options.sticky);
+        })).subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
         // scroll direction Down/Up
         var scrollDirection$ = scrollTop$.pipe(map(function (scrollTop) {
             var dir = scrollTop - _this.lastScrollPos;
@@ -134,11 +133,6 @@ var VirtualList = /** @class */ (function (_super) {
             var ch = _a[0], option = _a[1];
             return Math.ceil(ch / option.height) + (option.spare || 3);
         }));
-        // let the scroll bar stick the top
-        this._subs.push(this.props.data$.pipe(withLatestFrom(this.options$), filter(function (_a) {
-            var _ = _a[0], options = _a[1];
-            return Boolean(options.sticky);
-        })).subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
         // data indexes in view
         var indexes$ = combineLatest(scrollTop$, this.options$).pipe(
         // the index of the top elements of the current list

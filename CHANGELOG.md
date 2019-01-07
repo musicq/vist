@@ -1,3 +1,12 @@
+## [0.2.4](https://github.com/musicq/vist/compare/v0.2.3...v0.2.4) (2019-01-07)
+
+
+### Bug Fixes
+
+* fix the conflict of scroll ([97c51dd](https://github.com/musicq/vist/commit/97c51dd))
+
+
+
 ## [0.2.3](https://github.com/musicq/vist/compare/v0.2.2...v0.2.3) (2019-01-05)
 
 
