@@ -142,7 +142,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       map(([curIndex, data, actualRows]) => {
         // the first index of the virtualList on the last screen, if < 0, reset to 0
         const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
-        return [curIndex > maxIndex ? maxIndex : curIndex, actualRows];
+        return [Math.min(curIndex, maxIndex), actualRows];
       }),
       // if the index or actual rows changed, then update
       filter(([curIndex, actualRows]) => curIndex !== this.lastFirstIndex || actualRows !== this.actualRowsSnapshot),
