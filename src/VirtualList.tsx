@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, Subscription } from 'rxjs';
-import { debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, pairwise, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 
 export interface IVirtualListOptions {
@@ -115,11 +115,9 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
     // scroll direction Down/Up
     const scrollDirection$ = scrollTop$.pipe(
-      map(scrollTop => {
-        const dir = scrollTop - this.lastScrollPos;
-        this.lastScrollPos = scrollTop;
-        return dir > 0 ? 1 : -1;
-      })
+      pairwise(),
+      map(([p, n]) => (n - p > 0 ? 1 : -1)),
+      startWith(1)
     );
 
     // actual rows
