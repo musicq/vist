@@ -51,12 +51,12 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   // options$ to keep the latest options from the input
   private options$ = new ReplaySubject<IVirtualListOptions>(1);
 
-  private subs: Subscription[] = [];
+  private subs = new Subscription();
 
   componentDidMount() {
     const virtualListElm = this.virtualListRef.current as HTMLElement;
 
-    this.subs.push(
+    this.subs.add(
       this.props.options$
         .pipe(
           tap(options => {
@@ -78,7 +78,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // window resize
-    this.subs.push(
+    this.subs.add(
       fromEvent(window, 'resize')
         .pipe(
           withLatestFrom(this.options$),
@@ -99,18 +99,18 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const scrollTop$ = scrollEvent$.pipe(map(e => (e.target as HTMLElement).scrollTop));
 
     // scroll to the given position
-    this.subs.push(
+    this.subs.add(
       this.options$
         .pipe(
           filter(option => option.startIndex !== undefined),
           map(option => option.startIndex! * option.height)
+          // setTimeout to make sure the list is already rendered
         )
-        // setTimeout to make sure the list is already rendered
         .subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
     );
 
     // let the scroll bar stick the top
-    this.subs.push(
+    this.subs.add(
       this.props.data$
         .pipe(
           withLatestFrom(this.options$),
@@ -200,7 +200,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // subscribe to update the view
-    this.subs.push(
+    this.subs.add(
       combineLatest(dataInViewSlice$, scrollHeight$).subscribe(([data, scrollHeight]) =>
         this.setState({ data, scrollHeight })
       )
@@ -208,7 +208,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   }
 
   componentWillUnmount() {
-    this.subs.forEach(stream$ => stream$.unsubscribe());
+    this.subs.unsubscribe();
     this.containerHeight$.complete();
     this.options$.complete();
   }
