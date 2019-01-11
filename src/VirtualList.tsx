@@ -18,9 +18,9 @@ export interface IVirtualListProps<T> {
 }
 
 interface IDataItem<T> {
-  origin: T,
-  $index: number,
-  $pos: number
+  origin: T;
+  $index: number;
+  $pos: number;
 }
 
 interface IVirtualListState<T> {
@@ -57,33 +57,37 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const virtualListElm = this.virtualListRef.current as HTMLElement;
 
     this.subs.push(
-      this.props.options$.pipe(
-        tap(options => {
-          if (options.height === undefined) {
-            throw new Error('Vist needs a height property in options$');
-          }
-        }),
-        map(options => {
-          const opt: IVirtualListOptions = Object.assign({}, options);
-          opt.sticky = opt.sticky === undefined ? true : opt.sticky;
-          opt.spare = opt.spare === undefined ? 3 : opt.spare;
-          opt.startIndex = opt.startIndex === undefined ? 0 : opt.startIndex;
-          opt.resize = opt.resize === undefined ? true : opt.resize;
+      this.props.options$
+        .pipe(
+          tap(options => {
+            if (options.height === undefined) {
+              throw new Error('Vist needs a height property in options$');
+            }
+          }),
+          map(options => {
+            const opt: IVirtualListOptions = Object.assign({}, options);
+            opt.sticky = opt.sticky === undefined ? true : opt.sticky;
+            opt.spare = opt.spare === undefined ? 3 : opt.spare;
+            opt.startIndex = opt.startIndex === undefined ? 0 : opt.startIndex;
+            opt.resize = opt.resize === undefined ? true : opt.resize;
 
-          return opt;
-        })
-      ).subscribe(opt => this.options$.next(opt))
+            return opt;
+          })
+        )
+        .subscribe(opt => this.options$.next(opt))
     );
 
     // window resize
     this.subs.push(
-      fromEvent(window, 'resize').pipe(
-        withLatestFrom(this.options$),
-        skipWhile(([_, options]) => !options.resize),
-        startWith(null),
-        debounceTime(200),
-        map(() => this.containerHeight$.next(virtualListElm.clientHeight))
-      ).subscribe()
+      fromEvent(window, 'resize')
+        .pipe(
+          withLatestFrom(this.options$),
+          skipWhile(([_, options]) => !options.resize),
+          startWith(null),
+          debounceTime(200),
+          map(() => this.containerHeight$.next(virtualListElm.clientHeight))
+        )
+        .subscribe()
     );
 
     // scroll events
@@ -92,25 +96,27 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // scroll top
-    const scrollTop$ = scrollEvent$.pipe(
-      map(e => (e.target as HTMLElement).scrollTop)
-    );
+    const scrollTop$ = scrollEvent$.pipe(map(e => (e.target as HTMLElement).scrollTop));
 
     // scroll to the given position
     this.subs.push(
-      this.options$.pipe(
-        filter(option => option.startIndex !== undefined),
-        map(option => option.startIndex! * option.height)
+      this.options$
+        .pipe(
+          filter(option => option.startIndex !== undefined),
+          map(option => option.startIndex! * option.height)
+        )
         // setTimeout to make sure the list is already rendered
-      ).subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
+        .subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
     );
 
     // let the scroll bar stick the top
     this.subs.push(
-      this.props.data$.pipe(
-        withLatestFrom(this.options$),
-        filter(([_, options]) => Boolean(options.sticky))
-      ).subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
+      this.props.data$
+        .pipe(
+          withLatestFrom(this.options$),
+          filter(([_, options]) => Boolean(options.sticky))
+        )
+        .subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
     );
 
     // scroll direction Down/Up
@@ -128,15 +134,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     // data indexes in view
     const indexes$ = combineLatest(scrollTop$, this.options$).pipe(
       // the index of the top elements of the current list
-      map(([st, options]) => Math.floor(st as any / options.height))
+      map(([st, options]) => Math.floor((st as any) / options.height))
     );
 
     // if it's necessary to update the view
-    const shouldUpdate$ = combineLatest(
-      indexes$,
-      this.props.data$,
-      actualRows$
-    ).pipe(
+    const shouldUpdate$ = combineLatest(indexes$, this.props.data$, actualRows$).pipe(
       map(([curIndex, data, actualRows]) => {
         // the first index of the virtualList on the last screen, if < 0, reset to 0
         const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
@@ -145,7 +147,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       // if the index or actual rows changed, then update
       filter(([curIndex, actualRows]) => curIndex !== this.lastFirstIndex || actualRows !== this.actualRowsSnapshot),
       // update the index
-      tap(([curIndex]) => this.lastFirstIndex = curIndex),
+      tap(([curIndex]) => (this.lastFirstIndex = curIndex)),
       map(([firstIndex, actualRows]) => {
         const lastIndex = firstIndex + actualRows - 1;
         return [firstIndex, lastIndex];
@@ -170,11 +172,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
             this.actualRowsSnapshot = actualRows;
           }
 
-          return this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(item => ({
+          return (this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(item => ({
             origin: item,
             $pos: firstIndex * options.height,
             $index: firstIndex++
-          }));
+          })));
         }
 
         // reuse the existing elements
@@ -188,7 +190,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
           item.$index = newIndex++;
         });
 
-        return this.stateDataSnapshot = dataSlice;
+        return (this.stateDataSnapshot = dataSlice);
       })
     );
 
@@ -199,28 +201,27 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
     // subscribe to update the view
     this.subs.push(
-      combineLatest(dataInViewSlice$, scrollHeight$)
-        .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }))
+      combineLatest(dataInViewSlice$, scrollHeight$).subscribe(([data, scrollHeight]) =>
+        this.setState({ data, scrollHeight })
+      )
     );
   }
 
   componentWillUnmount() {
     this.subs.forEach(stream$ => stream$.unsubscribe());
     this.containerHeight$.complete();
+    this.options$.complete();
   }
 
   render() {
     return (
       <div className={style.VirtualList} ref={this.virtualListRef} style={this.props.style}>
         <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
-          {this.state.data.map((data, i) =>
-            <div
-              key={i}
-              className={style.VirtualListPlaceholder}
-              style={{ transform: `translateY(${data.$pos}px)` }}
-            >
+          {this.state.data.map((data, i) => (
+            <div key={i} className={style.VirtualListPlaceholder} style={{ transform: `translateY(${data.$pos}px)` }}>
               {data.origin !== undefined ? (this.props.children as any)(data.origin, data.$index) : null}
-            </div>)}
+            </div>
+          ))}
         </div>
       </div>
     );
