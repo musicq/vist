@@ -51,12 +51,12 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   // options$ to keep the latest options from the input
   private options$ = new ReplaySubject<IVirtualListOptions>(1);
 
-  private _subs: Subscription[] = [];
+  private subs: Subscription[] = [];
 
   componentDidMount() {
     const virtualListElm = this.virtualListRef.current as HTMLElement;
 
-    this._subs.push(
+    this.subs.push(
       this.props.options$.pipe(
         tap(options => {
           if (options.height === undefined) {
@@ -76,7 +76,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // window resize
-    this._subs.push(
+    this.subs.push(
       fromEvent(window, 'resize').pipe(
         withLatestFrom(this.options$),
         skipWhile(([_, options]) => !options.resize),
@@ -97,7 +97,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // scroll to the given position
-    this._subs.push(
+    this.subs.push(
       this.options$.pipe(
         filter(option => option.startIndex !== undefined),
         map(option => option.startIndex! * option.height)
@@ -106,7 +106,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // let the scroll bar stick the top
-    this._subs.push(
+    this.subs.push(
       this.props.data$.pipe(
         withLatestFrom(this.options$),
         filter(([_, options]) => Boolean(options.sticky))
@@ -198,14 +198,14 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // subscribe to update the view
-    this._subs.push(
+    this.subs.push(
       combineLatest(dataInViewSlice$, scrollHeight$)
         .subscribe(([data, scrollHeight]) => this.setState({ data, scrollHeight }))
     );
   }
 
   componentWillUnmount() {
-    this._subs.forEach(stream$ => stream$.unsubscribe());
+    this.subs.forEach(stream$ => stream$.unsubscribe());
     this.containerHeight$.complete();
   }
 
