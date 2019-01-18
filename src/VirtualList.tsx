@@ -218,7 +218,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       <div className={style.VirtualList} ref={this.virtualListRef} style={this.props.style}>
         <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
           {this.state.data.map((data, i) => (
-            <div key={i} className={style.VirtualListPlaceholder} style={{ transform: `translateY(${data.$pos}px)` }}>
+            <div key={i} className={style.VirtualListPlaceholder} style={{ top: data.$pos + 'px' }}>
               {data.origin !== undefined ? (this.props.children as any)(data.origin, data.$index) : null}
             </div>
           ))}
