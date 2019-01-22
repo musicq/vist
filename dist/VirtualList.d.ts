@@ -34,7 +34,7 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
     private lastFirstIndex;
     private lastScrollPos;
     private options$;
-    private _subs;
+    private subs;
     componentDidMount(): void;
     componentWillUnmount(): void;
     render(): JSX.Element;

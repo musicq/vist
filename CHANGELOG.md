@@ -1,3 +1,19 @@
+## [0.2.5](https://github.com/musicq/vist/compare/v0.2.4...v0.2.5) (2019-01-22)
+
+
+### Bug Fixes
+
+* use `top` instead of `transform` ([953136f](https://github.com/musicq/vist/commit/953136f))
+* use Math.min instead of compare ([c7548ed](https://github.com/musicq/vist/commit/c7548ed))
+
+
+### Features
+
+* use `pairwise` to jude scroll direction ([311e411](https://github.com/musicq/vist/commit/311e411))
+* use `Subscriptions` to unsubscribe the streams ([6f8cf99](https://github.com/musicq/vist/commit/6f8cf99))
+
+
+
 ## [0.2.4](https://github.com/musicq/vist/compare/v0.2.3...v0.2.4) (2019-01-07)
 
 

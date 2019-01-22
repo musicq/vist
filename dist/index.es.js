@@ -1,6 +1,6 @@
 import { createRef, createElement, Component } from 'react';
-import { BehaviorSubject, combineLatest, fromEvent, ReplaySubject } from 'rxjs';
-import { debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, fromEvent, ReplaySubject, Subscription } from 'rxjs';
+import { debounceTime, filter, map, pairwise, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -86,13 +86,14 @@ var VirtualList = /** @class */ (function (_super) {
         _this.lastScrollPos = 0;
         // options$ to keep the latest options from the input
         _this.options$ = new ReplaySubject(1);
-        _this._subs = [];
+        _this.subs = new Subscription();
         return _this;
     }
     VirtualList.prototype.componentDidMount = function () {
         var _this = this;
         var virtualListElm = this.virtualListRef.current;
-        this._subs.push(this.props.options$.pipe(tap(function (options) {
+        this.subs.add(this.props.options$
+            .pipe(tap(function (options) {
             if (options.height === undefined) {
                 throw new Error('Vist needs a height property in options$');
             }
@@ -103,31 +104,37 @@ var VirtualList = /** @class */ (function (_super) {
             opt.startIndex = opt.startIndex === undefined ? 0 : opt.startIndex;
             opt.resize = opt.resize === undefined ? true : opt.resize;
             return opt;
-        })).subscribe(function (opt) { return _this.options$.next(opt); }));
+        }))
+            .subscribe(function (opt) { return _this.options$.next(opt); }));
         // window resize
-        this._subs.push(fromEvent(window, 'resize').pipe(withLatestFrom(this.options$), skipWhile(function (_a) {
+        this.subs.add(fromEvent(window, 'resize')
+            .pipe(withLatestFrom(this.options$), skipWhile(function (_a) {
             var _ = _a[0], options = _a[1];
             return !options.resize;
-        }), startWith(null), debounceTime(200), map(function () { return _this.containerHeight$.next(virtualListElm.clientHeight); })).subscribe());
+        }), startWith(null), debounceTime(200), map(function () { return _this.containerHeight$.next(virtualListElm.clientHeight); }))
+            .subscribe());
         // scroll events
         var scrollEvent$ = fromEvent(virtualListElm, 'scroll').pipe(startWith({ target: { scrollTop: this.lastScrollPos } }));
         // scroll top
         var scrollTop$ = scrollEvent$.pipe(map(function (e) { return e.target.scrollTop; }));
         // scroll to the given position
-        this._subs.push(this.options$.pipe(filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
+        this.subs.add(this.options$
+            .pipe(filter(function (option) { return option.startIndex !== undefined; }), map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered
-        ).subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTo(0, scrollTop); }); }));
+        )
+            .subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTo(0, scrollTop); }); }));
         // let the scroll bar stick the top
-        this._subs.push(this.props.data$.pipe(withLatestFrom(this.options$), filter(function (_a) {
+        this.subs.add(this.props.data$
+            .pipe(withLatestFrom(this.options$), filter(function (_a) {
             var _ = _a[0], options = _a[1];
             return Boolean(options.sticky);
-        })).subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
+        }))
+            .subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
         // scroll direction Down/Up
-        var scrollDirection$ = scrollTop$.pipe(map(function (scrollTop) {
-            var dir = scrollTop - _this.lastScrollPos;
-            _this.lastScrollPos = scrollTop;
-            return dir > 0 ? 1 : -1;
-        }));
+        var scrollDirection$ = scrollTop$.pipe(pairwise(), map(function (_a) {
+            var p = _a[0], n = _a[1];
+            return (n - p > 0 ? 1 : -1);
+        }), startWith(1));
         // actual rows
         var actualRows$ = combineLatest(this.containerHeight$, this.options$).pipe(map(function (_a) {
             var ch = _a[0], option = _a[1];
@@ -145,7 +152,7 @@ var VirtualList = /** @class */ (function (_super) {
             var curIndex = _a[0], data = _a[1], actualRows = _a[2];
             // the first index of the virtualList on the last screen, if < 0, reset to 0
             var maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
-            return [curIndex > maxIndex ? maxIndex : curIndex, actualRows];
+            return [Math.min(curIndex, maxIndex), actualRows];
         }), 
         // if the index or actual rows changed, then update
         filter(function (_a) {
@@ -155,7 +162,7 @@ var VirtualList = /** @class */ (function (_super) {
         // update the index
         tap(function (_a) {
             var curIndex = _a[0];
-            return _this.lastFirstIndex = curIndex;
+            return (_this.lastFirstIndex = curIndex);
         }), map(function (_a) {
             var firstIndex = _a[0], actualRows = _a[1];
             var lastIndex = firstIndex + actualRows - 1;
@@ -175,11 +182,11 @@ var VirtualList = /** @class */ (function (_super) {
                 if (actualRows !== _this.actualRowsSnapshot) {
                     _this.actualRowsSnapshot = actualRows;
                 }
-                return _this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
+                return (_this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(function (item) { return ({
                     origin: item,
                     $pos: firstIndex * options.height,
                     $index: firstIndex++
-                }); });
+                }); }));
             }
             // reuse the existing elements
             var diffSliceIndexes = _this.getDifferenceIndexes(dataSlice, firstIndex, lastIndex);
@@ -190,7 +197,7 @@ var VirtualList = /** @class */ (function (_super) {
                 item.$pos = newIndex * options.height;
                 item.$index = newIndex++;
             });
-            return _this.stateDataSnapshot = dataSlice;
+            return (_this.stateDataSnapshot = dataSlice);
         }));
         // total height of the virtual list
         var scrollHeight$ = combineLatest(this.props.data$, this.options$).pipe(map(function (_a) {
@@ -198,22 +205,20 @@ var VirtualList = /** @class */ (function (_super) {
             return data.length * option.height;
         }));
         // subscribe to update the view
-        this._subs.push(combineLatest(dataInViewSlice$, scrollHeight$)
-            .subscribe(function (_a) {
+        this.subs.add(combineLatest(dataInViewSlice$, scrollHeight$).subscribe(function (_a) {
             var data = _a[0], scrollHeight = _a[1];
             return _this.setState({ data: data, scrollHeight: scrollHeight });
         }));
     };
     VirtualList.prototype.componentWillUnmount = function () {
-        this._subs.forEach(function (stream$) { return stream$.unsubscribe(); });
+        this.subs.unsubscribe();
         this.containerHeight$.complete();
+        this.options$.complete();
     };
     VirtualList.prototype.render = function () {
         var _this = this;
         return (createElement("div", { className: style.VirtualList, ref: this.virtualListRef, style: this.props.style },
-            createElement("div", { className: style.VirtualListContainer, style: { height: this.state.scrollHeight } }, this.state.data.map(function (data, i) {
-                return createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { transform: "translateY(" + data.$pos + "px)" } }, data.origin !== undefined ? _this.props.children(data.origin, data.$index) : null);
-            }))));
+            createElement("div", { className: style.VirtualListContainer, style: { height: this.state.scrollHeight } }, this.state.data.map(function (data, i) { return (createElement("div", { key: i, className: style.VirtualListPlaceholder, style: { top: data.$pos + 'px' } }, data.origin !== undefined ? _this.props.children(data.origin, data.$index) : null)); }))));
     };
     VirtualList.prototype.getDifferenceIndexes = function (slice, firstIndex, lastIndex) {
         var indexes = [];
