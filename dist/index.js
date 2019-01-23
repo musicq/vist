@@ -126,14 +126,14 @@ var VirtualList = /** @class */ (function (_super) {
             .pipe(operators.filter(function (option) { return option.startIndex !== undefined; }), operators.map(function (option) { return option.startIndex * option.height; })
         // setTimeout to make sure the list is already rendered
         )
-            .subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTo(0, scrollTop); }); }));
+            .subscribe(function (scrollTop) { return setTimeout(function () { return virtualListElm.scrollTop = scrollTop; }); }));
         // let the scroll bar stick the top
         this.subs.add(this.props.data$
             .pipe(operators.withLatestFrom(this.options$), operators.filter(function (_a) {
             var _ = _a[0], options = _a[1];
             return Boolean(options.sticky);
         }))
-            .subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTo(0, 0); }); }));
+            .subscribe(function () { return setTimeout(function () { return virtualListElm.scrollTop = 0; }); }));
         // scroll direction Down/Up
         var scrollDirection$ = scrollTop$.pipe(operators.pairwise(), operators.map(function (_a) {
             var p = _a[0], n = _a[1];

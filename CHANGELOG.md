@@ -1,3 +1,12 @@
+## [0.2.6](https://github.com/musicq/vist/compare/v0.2.5...v0.2.6) (2019-01-23)
+
+
+### Bug Fixes
+
+* fix scrollTo not work in IE 11 ([508098d](https://github.com/musicq/vist/commit/508098d))
+
+
+
 ## [0.2.5](https://github.com/musicq/vist/compare/v0.2.4...v0.2.5) (2019-01-22)
 
 
