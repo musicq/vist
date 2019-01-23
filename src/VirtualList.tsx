@@ -106,7 +106,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
           map(option => option.startIndex! * option.height)
           // setTimeout to make sure the list is already rendered
         )
-        .subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTo(0, scrollTop)))
+        .subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTop = scrollTop))
     );
 
     // let the scroll bar stick the top
@@ -116,7 +116,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
           withLatestFrom(this.options$),
           filter(([_, options]) => Boolean(options.sticky))
         )
-        .subscribe(() => setTimeout(() => virtualListElm.scrollTo(0, 0)))
+        .subscribe(() => setTimeout(() => virtualListElm.scrollTop = 0))
     );
 
     // scroll direction Down/Up
