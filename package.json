@@ -30,8 +30,7 @@
   "peerDependencies": {
     "prop-types": "^15.5.4",
     "react": "^15.0.0 || ^16.0.0",
-    "react-dom": "^15.0.0 || ^16.0.0",
-    "rxjs": "^6.3.3"
+    "react-dom": "^15.0.0 || ^16.0.0"
   },
   "devDependencies": {
     "@svgr/rollup": "^2.4.1",
@@ -57,9 +56,12 @@
     "tslint": "^5.12.0",
     "tslint-config-prettier": "^1.17.0",
     "tslint-react": "^3.6.0",
-    "typescript": "^2.8.3"
+    "typescript": "^3.7.3"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "rxjs": "^6.5.3"
+  }
 }
