@@ -1,14 +1,17 @@
 import * as React from 'react';
 import { combineLatest, merge, Observable, Subscription } from 'rxjs';
-import { filter, map, mapTo, mergeAll, tap, withLatestFrom } from 'rxjs/operators';
+import { mapTo, mergeAll } from 'rxjs/operators';
 import style from './VirtualList.css';
 import {
   useActualRows,
   useContainerHeight,
+  useDataSliceInView,
   useIndices,
+  useIndicesInViewport,
   useOptions,
   userScrollToPosition,
   useScrollDirection,
+  useScrollHeight,
   useScrollTop,
   useStickyTop
 } from './VirtualList.service';
@@ -27,7 +30,7 @@ export interface IVirtualListProps<T> {
   style?: any;
 }
 
-interface IDataItem<T> {
+export interface IDataItem<T> {
   origin: T;
   $index: number;
   $pos: number;
@@ -44,17 +47,8 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     scrollHeight: 0
   };
 
-  // snapshot of data property in state
-  private stateDataSnapshot: Array<IDataItem<T>> = [];
-  // snapshot of actualRows
-  private actualRowsSnapshot: number = 0;
-  // record data reference
-  private dataReference: T[] = [];
   // container dom instance
   private virtualListRef = React.createRef<HTMLDivElement>();
-  // last first index of data for the first element of the virtual list
-  private lastFirstIndex = -1;
-
   private subs = new Subscription();
 
   componentDidMount() {
@@ -65,6 +59,10 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const scrollDirection$ = useScrollDirection(scrollTop$);
     const actualRows$ = useActualRows(containerHeight$, options$);
     const indices$ = useIndices(scrollTop$, options$);
+    const indicesInView$ = useIndicesInViewport(indices$, this.props.data$, actualRows$);
+    const dataSliceInView$ = useDataSliceInView(
+      this.props.data$, options$, indicesInView$, scrollDirection$, actualRows$);
+    const scrollHeight$ = useScrollHeight(this.props.data$, options$);
 
     const scrollTo$ = merge([
       userScrollToPosition(options$),
@@ -75,74 +73,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       scrollTo$.subscribe(scrollTop => virtualListElm.scrollTop = scrollTop)
     );
 
-
-    // if it's necessary to update the view
-    const shouldUpdate$ = combineLatest([indices$, this.props.data$, actualRows$]).pipe(
-      map(([curIndex, data, actualRows]) => {
-        // the first index of the virtualList on the last screen, if < 0, reset to 0
-        const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
-        return [Math.min(curIndex, maxIndex), actualRows];
-      }),
-      // if the index or actual rows changed, then update
-      filter(([curIndex, actualRows]) => curIndex !== this.lastFirstIndex || actualRows !== this.actualRowsSnapshot),
-      // update the index
-      tap(([curIndex]) => (this.lastFirstIndex = curIndex)),
-      map(([firstIndex, actualRows]) => {
-        const lastIndex = firstIndex + actualRows - 1;
-        return [firstIndex, lastIndex];
-      })
-    );
-
-    // data slice in the view
-    const dataInViewSlice$ = combineLatest(this.props.data$, options$, shouldUpdate$).pipe(
-      withLatestFrom(scrollDirection$, actualRows$),
-      map(([[data, options, [firstIndex, lastIndex]], dir, actualRows]) => {
-        const dataSlice = this.stateDataSnapshot;
-        // compare data reference, if not the same, then update the list
-        const dataReferenceIsSame = data === this.dataReference;
-
-        // fill the list
-        if (!dataSlice.length || !dataReferenceIsSame || actualRows !== this.actualRowsSnapshot) {
-          if (!dataReferenceIsSame) {
-            this.dataReference = data;
-          }
-
-          if (actualRows !== this.actualRowsSnapshot) {
-            this.actualRowsSnapshot = actualRows;
-          }
-
-          return (this.stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(item => ({
-            origin: item,
-            $pos: firstIndex * options.height,
-            $index: firstIndex++
-          })));
-        }
-
-        // reuse the existing elements
-        const diffSliceIndexes = this.getDifferenceIndexes(dataSlice, firstIndex, lastIndex);
-        let newIndex = dir > 0 ? lastIndex - diffSliceIndexes.length + 1 : firstIndex;
-
-        diffSliceIndexes.forEach(index => {
-          const item = dataSlice[index];
-          item.origin = data[newIndex];
-          item.$pos = newIndex * options.height;
-          item.$index = newIndex++;
-        });
-
-        return (this.stateDataSnapshot = dataSlice);
-      })
-    );
-
-    // total height of the virtual list
-    const scrollHeight$ = combineLatest(this.props.data$, options$).pipe(
-      map(([data, option]) => data.length * option.height)
-    );
-
-    // subscribe to update the view
     this.subs.add(
-      combineLatest(dataInViewSlice$, scrollHeight$).subscribe(([data, scrollHeight]) =>
-        this.setState({ data, scrollHeight })
-      )
+      combineLatest([dataSliceInView$, scrollHeight$])
+        .subscribe(([data, scrollHeight]) =>
+          this.setState({ data, scrollHeight })
+        )
     );
   }
 
@@ -162,17 +97,5 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
         </div>
       </div>
     );
-  }
-
-  private getDifferenceIndexes(slice: Array<IDataItem<T>>, firstIndex: number, lastIndex: number): number[] {
-    const indexes: number[] = [];
-
-    slice.forEach((item, i) => {
-      if (item.$index < firstIndex || item.$index > lastIndex) {
-        indexes.push(i);
-      }
-    });
-
-    return indexes;
   }
 }
