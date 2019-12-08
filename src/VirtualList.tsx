@@ -29,6 +29,8 @@ export interface IVirtualListProps<T> {
   options$: Observable<IVirtualListOptions>;
   style?: { [key: string]: number | string };
   className?: string;
+  keepDom?: boolean;
+  uniqKey?: string;
 }
 
 export interface IDataItem<T> {
@@ -93,7 +95,11 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       <div className={cls} ref={this.virtualListRef} style={this.props.style}>
         <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
           {this.state.data.map((data, i) => (
-            <div key={i} className={style.VirtualListPlaceholder} style={{ top: data.$pos }}>
+            <div
+              key={this.props.keepDom ? i : (this.props.uniqKey ? data.origin[this.props.uniqKey] : i)}
+              className={style.VirtualListPlaceholder}
+              style={{ top: data.$pos }}
+            >
               {data.origin !== undefined ? (this.props.children as any)(data.origin, data.$index) : null}
             </div>
           ))}
