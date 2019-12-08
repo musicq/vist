@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { BehaviorSubject, combineLatest, of } from 'rxjs';
+import { BehaviorSubject, combineLatest } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { VirtualList } from 'vist';
 
@@ -10,6 +10,7 @@ class App extends Component {
   };
   search$ = new BehaviorSubject(this.state.keyWord);
   data$ = new BehaviorSubject([]);
+  options$ = new BehaviorSubject({ height: 180, startIndex: 3000 });
 
   constructor(props) {
     super(props);
@@ -23,7 +24,7 @@ class App extends Component {
       .then(data => this.data$.next(data))
       .catch(console.error);
 
-    combineLatest(this.data$, this.search$).pipe(
+    combineLatest([this.data$, this.search$]).pipe(
       tap(([data, keyWord]) => this.setState({ keyWord })),
       map(([data, keyWord]) => data.filter(item => {
         if (Number.isNaN(+keyWord)) {
@@ -32,7 +33,10 @@ class App extends Component {
 
         return item.id.toString().includes(keyWord);
       }) || [])
-    ).subscribe(data => this.state.data.next(data));
+    ).subscribe(data => {
+      this.state.data.next(data);
+      this.options$.next({ height: 180, startIndex: 3000 });
+    });
   }
 
   onSearch(e) {
@@ -54,7 +58,7 @@ class App extends Component {
         <div className="virtual-box">
           <VirtualList
             data$={this.state.data}
-            options$={of({ height: 180, startIndex: 3000 })}
+            options$={this.options$}
             style={{ height: '70vh' }}
           >
             {item => (
