@@ -1,0 +1,14 @@
+import { RefObject } from 'react';
+import { Observable } from 'rxjs';
+import { IDataItem, IVirtualListOptions } from './VirtualList';
+export declare function useOptions(options$: Observable<IVirtualListOptions>): Observable<IVirtualListOptions>;
+export declare function useContainerHeight(containerRef: RefObject<HTMLDivElement>, options$: Observable<IVirtualListOptions>): Observable<number>;
+export declare function useScrollTop(el: HTMLElement): Observable<number>;
+export declare function userScrollToPosition(options$: Observable<IVirtualListOptions>): Observable<number>;
+export declare function useStickyTop<T>(data$: Observable<T[]>, options$: Observable<IVirtualListOptions>): Observable<[T[], IVirtualListOptions]>;
+export declare function useScrollDirection(scrollTop$: Observable<number>): Observable<number>;
+export declare function useActualRows(containerHeight$: Observable<number>, options$: Observable<IVirtualListOptions>): Observable<number>;
+export declare function useIndices(scrollTop$: Observable<number>, options$: Observable<IVirtualListOptions>): Observable<number>;
+export declare function useIndicesInViewport<T>(indices$: Observable<number>, data$: Observable<T[]>, actualRows$: Observable<number>): Observable<[number, number]>;
+export declare function useDataSliceInView<T>(data$: Observable<T[]>, options$: Observable<IVirtualListOptions>, indicesInView$: Observable<[number, number]>, scrollDirection$: Observable<number>, actualRows$: Observable<number>): Observable<Array<IDataItem<T>>>;
+export declare function useScrollHeight<T>(data$: Observable<T[]>, options$: Observable<IVirtualListOptions>): Observable<number>;

@@ -10,9 +10,14 @@ export interface IVirtualListOptions {
 export interface IVirtualListProps<T> {
     data$: Observable<T[]>;
     options$: Observable<IVirtualListOptions>;
-    style?: any;
+    style?: {
+        [key: string]: number | string;
+    };
+    className?: string;
+    keepDom?: boolean;
+    uniqKey?: string;
 }
-interface IDataItem<T> {
+export interface IDataItem<T> {
     origin: T;
     $index: number;
     $pos: number;
@@ -26,18 +31,10 @@ export declare class VirtualList<T> extends React.Component<Readonly<IVirtualLis
         data: IDataItem<T>[];
         scrollHeight: number;
     };
-    private stateDataSnapshot;
-    private actualRowsSnapshot;
-    private dataReference;
     private virtualListRef;
-    private containerHeight$;
-    private lastFirstIndex;
-    private lastScrollPos;
-    private options$;
     private subs;
     componentDidMount(): void;
     componentWillUnmount(): void;
     render(): JSX.Element;
-    private getDifferenceIndexes;
 }
 export {};
