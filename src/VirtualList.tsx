@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { combineLatest, merge, Observable, Subscription } from 'rxjs';
-import { filter, map, mapTo, mergeAll, pairwise, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { filter, map, mapTo, mergeAll, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
 import {
+  useActualRows,
   useContainerHeight,
+  useIndices,
   useOptions,
   userScrollToPosition,
+  useScrollDirection,
   useScrollTop,
   useStickyTop
 } from './VirtualList.service';
@@ -59,6 +62,9 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const options$ = useOptions(this.props.options$);
     const containerHeight$ = useContainerHeight(this.virtualListRef, options$);
     const scrollTop$ = useScrollTop(virtualListElm);
+    const scrollDirection$ = useScrollDirection(scrollTop$);
+    const actualRows$ = useActualRows(containerHeight$, options$);
+    const indices$ = useIndices(scrollTop$, options$);
 
     const scrollTo$ = merge([
       userScrollToPosition(options$),
@@ -69,26 +75,9 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
       scrollTo$.subscribe(scrollTop => virtualListElm.scrollTop = scrollTop)
     );
 
-    // scroll direction Down/Up
-    const scrollDirection$ = scrollTop$.pipe(
-      pairwise(),
-      map(([p, n]) => (n - p > 0 ? 1 : -1)),
-      startWith(1)
-    );
-
-    // actual rows
-    const actualRows$ = combineLatest(containerHeight$, options$).pipe(
-      map(([ch, option]) => Math.ceil(ch / option.height) + (option.spare || 3))
-    );
-
-    // data indexes in view
-    const indexes$ = combineLatest(scrollTop$, options$).pipe(
-      // the index of the top elements of the current list
-      map(([st, options]) => Math.floor((st as any) / options.height))
-    );
 
     // if it's necessary to update the view
-    const shouldUpdate$ = combineLatest(indexes$, this.props.data$, actualRows$).pipe(
+    const shouldUpdate$ = combineLatest([indices$, this.props.data$, actualRows$]).pipe(
       map(([curIndex, data, actualRows]) => {
         // the first index of the virtualList on the last screen, if < 0, reset to 0
         const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;

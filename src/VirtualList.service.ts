@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, filter, map, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { RefObject } from 'react';
+import { combineLatest, fromEvent, Observable } from 'rxjs';
+import { debounceTime, filter, map, pairwise, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import { IVirtualListOptions } from './VirtualList';
 
 function validateOptions(options: IVirtualListOptions): void {
@@ -29,7 +29,7 @@ export function useOptions(options$: Observable<IVirtualListOptions>): Observabl
 }
 
 export function useContainerHeight(
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: RefObject<HTMLDivElement>,
   options$: Observable<IVirtualListOptions>
 ): Observable<number> {
   return fromEvent(window, 'resize')
@@ -63,4 +63,31 @@ export function useStickyTop<T>(data$: Observable<T[]>, options$: Observable<IVi
       withLatestFrom(options$),
       filter(([_, options]) => options.sticky!)
     );
+}
+
+export function useScrollDirection(scrollTop$: Observable<number>): Observable<number> {
+  return scrollTop$.pipe(
+    pairwise(),
+    map(([p, n]) => (n - p > 0 ? 1 : -1)),
+    startWith(1)
+  );
+}
+
+export function useActualRows(
+  containerHeight$: Observable<number>,
+  options$: Observable<IVirtualListOptions>
+): Observable<number> {
+  return combineLatest([containerHeight$, options$]).pipe(
+    map(([ch, option]) => Math.ceil(ch / option.height) + option.spare!)
+  );
+}
+
+export function useIndices(
+  scrollTop$: Observable<number>,
+  options$: Observable<IVirtualListOptions>
+): Observable<number> {
+  return combineLatest([scrollTop$, options$]).pipe(
+    // the index of the top elements of the current list
+    map(([st, options]) => Math.floor((st as any) / options.height))
+  );
 }
