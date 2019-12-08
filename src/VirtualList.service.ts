@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 import { combineLatest, fromEvent, Observable } from 'rxjs';
 import { debounceTime, filter, map, pairwise, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
-import { IVirtualListOptions } from './VirtualList';
+import { IDataItem, IVirtualListOptions } from './VirtualList';
 
 function validateOptions(options: IVirtualListOptions): void {
   if (!Reflect.has(options, 'height') || options.height === undefined) {
@@ -89,5 +89,101 @@ export function useIndices(
   return combineLatest([scrollTop$, options$]).pipe(
     // the index of the top elements of the current list
     map(([st, options]) => Math.floor((st as any) / options.height))
+  );
+}
+
+let lastFirstIndex = -1;
+let actualRowsSnapshot = 0;
+
+export function useIndicesInViewport<T>(
+  indices$: Observable<number>,
+  data$: Observable<T[]>,
+  actualRows$: Observable<number>
+): Observable<[number, number]> {
+  return combineLatest([indices$, data$, actualRows$]).pipe(
+    map(([curIndex, data, actualRows]) => {
+      // the first index of the virtualList on the last screen, if < 0, reset to 0
+      const maxIndex = data.length - actualRows < 0 ? 0 : data.length - actualRows;
+      return [Math.min(curIndex, maxIndex), actualRows];
+    }),
+    // if the index or actual rows changed, then update
+    filter(([curIndex, actualRows]) => curIndex !== lastFirstIndex || actualRows !== actualRowsSnapshot),
+    // update the index
+    tap(([curIndex]) => (lastFirstIndex = curIndex)),
+    map(([firstIndex, actualRows]) => {
+      const lastIndex = firstIndex + actualRows - 1;
+      return [firstIndex, lastIndex];
+    })
+  );
+}
+
+let stateDataSnapshot: Array<IDataItem<any>> = [];
+let dataReference: any[] = [];
+
+export function useDataSliceInView<T>(
+  data$: Observable<T[]>,
+  options$: Observable<IVirtualListOptions>,
+  indicesInView$: Observable<[number, number]>,
+  scrollDirection$: Observable<number>,
+  actualRows$: Observable<number>
+): Observable<Array<IDataItem<T>>> {
+  return combineLatest([data$, options$, indicesInView$]).pipe(
+    withLatestFrom(scrollDirection$, actualRows$),
+    map(([[data, options, [firstIndex, lastIndex]], dir, actualRows]) => {
+      const dataSlice = stateDataSnapshot;
+      // compare data reference, if not the same, then update the list
+      const dataReferenceIsSame = data === dataReference;
+
+      // fill the list
+      if (!dataSlice.length || !dataReferenceIsSame || actualRows !== actualRowsSnapshot) {
+        if (!dataReferenceIsSame) {
+          dataReference = data;
+        }
+
+        if (actualRows !== actualRowsSnapshot) {
+          actualRowsSnapshot = actualRows;
+        }
+
+        return (stateDataSnapshot = data.slice(firstIndex, lastIndex + 1).map(item => ({
+          origin: item,
+          $pos: firstIndex * options.height,
+          $index: firstIndex++
+        })));
+      }
+
+      // reuse the existing elements
+      const diffSliceIndexes = getDifferenceIndexes(dataSlice, firstIndex, lastIndex);
+      let newIndex = dir > 0 ? lastIndex - diffSliceIndexes.length + 1 : firstIndex;
+
+      diffSliceIndexes.forEach(index => {
+        const item = dataSlice[index];
+        item.origin = data[newIndex];
+        item.$pos = newIndex * options.height;
+        item.$index = newIndex++;
+      });
+
+      return (stateDataSnapshot = dataSlice);
+    })
+  );
+}
+
+function getDifferenceIndexes<T>(slice: Array<IDataItem<T>>, firstIndex: number, lastIndex: number): number[] {
+  const indexes: number[] = [];
+
+  slice.forEach((item, i) => {
+    if (item.$index < firstIndex || item.$index > lastIndex) {
+      indexes.push(i);
+    }
+  });
+
+  return indexes;
+}
+
+export function useScrollHeight<T>(
+  data$: Observable<T[]>,
+  options$: Observable<IVirtualListOptions>
+): Observable<number> {
+  return combineLatest([data$, options$]).pipe(
+    map(([data, option]) => data.length * option.height)
   );
 }
