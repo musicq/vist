@@ -37,7 +37,11 @@ class App extends Component {
         data$={this.state.data}
         options$={of({ height: 60 })}
         style={{ height: 400, border: '1px solid black' }}>
-        {(item, index) => <p style={{ height: 59, margin: 0, borderBottom: '1px solid green' }}>No. {index} - {item}</p>}
+        {(item, index) => (
+          <p style={{ height: 59, margin: 0, borderBottom: '1px solid green' }}>
+            No. {index} - {item}
+          </p>
+        )}
       </VirtualList>
     );
   }
@@ -46,11 +50,14 @@ class App extends Component {
 
 ## Props
 
-| Property   | Type                              | Description                     |
-| ---------- | --------------------------------- | ------------------------------- |
-| `data$`    | `Observable<any>`                 | Data source of the list.        |
-| `options$` | `Observable<IVirtualListOptions>` | Options of the virtual list.    |
-| `style`    | `any`                             | Style of VirtualList container. |
+| Property    | Type                              | Description                         |
+| ----------- | --------------------------------- | ----------------------------------- |
+| `data$`     | `Observable<any>`                 | Data source of the list.            |
+| `options$`  | `Observable<IVirtualListOptions>` | Options of the virtual list.        |
+| `style`     | `{[key: string]: string|number}`  | Style of VirtualList container.     |
+| `className` | `string`                          | className of VirtualList container. |
+| `keepDom`   | `boolean`                         | Determine whether to reuse the dom. |
+| `uniqKey`   | `string`                          | The key field of list to identify.  |
 
 ### `IVirtualListOptions`
 
