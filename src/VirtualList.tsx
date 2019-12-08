@@ -27,7 +27,8 @@ export interface IVirtualListOptions {
 export interface IVirtualListProps<T> {
   data$: Observable<T[]>;
   options$: Observable<IVirtualListOptions>;
-  style?: any;
+  style?: { [key: string]: number | string };
+  className?: string;
 }
 
 export interface IDataItem<T> {
@@ -86,11 +87,13 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   }
 
   render() {
+    const cls = `${style.VirtualList} ${this.props.className || ''}`;
+
     return (
-      <div className={style.VirtualList} ref={this.virtualListRef} style={this.props.style}>
+      <div className={cls} ref={this.virtualListRef} style={this.props.style}>
         <div className={style.VirtualListContainer} style={{ height: this.state.scrollHeight }}>
           {this.state.data.map((data, i) => (
-            <div key={i} className={style.VirtualListPlaceholder} style={{ top: data.$pos + 'px' }}>
+            <div key={i} className={style.VirtualListPlaceholder} style={{ top: data.$pos }}>
               {data.origin !== undefined ? (this.props.children as any)(data.origin, data.$index) : null}
             </div>
           ))}
