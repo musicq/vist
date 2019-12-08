@@ -42,3 +42,25 @@ export function useContainerHeight(
       map(() => containerRef.current!.clientHeight)
     );
 }
+
+export function useScrollTop(el: HTMLElement): Observable<number> {
+  const scrollEvent$ = fromEvent(el, 'scroll').pipe(
+    startWith({ target: { scrollTop: 0 } })
+  );
+
+  return scrollEvent$.pipe(map(e => (e.target as HTMLElement).scrollTop));
+}
+
+export function userScrollToPosition(options$: Observable<IVirtualListOptions>): Observable<number> {
+  return options$.pipe(
+    map(option => option.startIndex! * option.height)
+  );
+}
+
+export function useStickyTop<T>(data$: Observable<T[]>, options$: Observable<IVirtualListOptions>) {
+  return data$
+    .pipe(
+      withLatestFrom(options$),
+      filter(([_, options]) => options.sticky!)
+    );
+}

@@ -1,8 +1,14 @@
 import * as React from 'react';
-import { combineLatest, fromEvent, Observable, Subscription } from 'rxjs';
-import { filter, map, pairwise, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { combineLatest, merge, Observable, Subscription } from 'rxjs';
+import { filter, map, mapTo, mergeAll, pairwise, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
-import { useContainerHeight, useOptions } from './VirtualList.service';
+import {
+  useContainerHeight,
+  useOptions,
+  userScrollToPosition,
+  useScrollTop,
+  useStickyTop
+} from './VirtualList.service';
 
 export interface IVirtualListOptions {
   height: number;
@@ -45,8 +51,6 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   private virtualListRef = React.createRef<HTMLDivElement>();
   // last first index of data for the first element of the virtual list
   private lastFirstIndex = -1;
-  // record the position of last scroll
-  private lastScrollPos = 0;
 
   private subs = new Subscription();
 
@@ -54,34 +58,15 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     const virtualListElm = this.virtualListRef.current as HTMLElement;
     const options$ = useOptions(this.props.options$);
     const containerHeight$ = useContainerHeight(this.virtualListRef, options$);
+    const scrollTop$ = useScrollTop(virtualListElm);
 
-    // scroll events
-    const scrollEvent$ = fromEvent(virtualListElm, 'scroll').pipe(
-      startWith({ target: { scrollTop: this.lastScrollPos } })
-    );
+    const scrollTo$ = merge([
+      userScrollToPosition(options$),
+      useStickyTop(this.props.data$, options$).pipe(mapTo(0))
+    ]).pipe(mergeAll());
 
-    // scroll top
-    const scrollTop$ = scrollEvent$.pipe(map(e => (e.target as HTMLElement).scrollTop));
-
-    // scroll to the given position
     this.subs.add(
-      options$
-        .pipe(
-          filter(option => option.startIndex !== undefined),
-          map(option => option.startIndex! * option.height)
-          // setTimeout to make sure the list is already rendered
-        )
-        .subscribe(scrollTop => setTimeout(() => virtualListElm.scrollTop = scrollTop))
-    );
-
-    // let the scroll bar stick the top
-    this.subs.add(
-      this.props.data$
-        .pipe(
-          withLatestFrom(options$),
-          filter(([_, options]) => Boolean(options.sticky))
-        )
-        .subscribe(() => setTimeout(() => virtualListElm.scrollTop = 0))
+      scrollTo$.subscribe(scrollTop => virtualListElm.scrollTop = scrollTop)
     );
 
     // scroll direction Down/Up
