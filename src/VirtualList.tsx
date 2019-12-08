@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, Subscription } from 'rxjs';
-import { debounceTime, filter, map, pairwise, skipWhile, startWith, tap, withLatestFrom } from 'rxjs/operators';
+import { combineLatest, fromEvent, Observable, Subscription } from 'rxjs';
+import { filter, map, pairwise, startWith, tap, withLatestFrom } from 'rxjs/operators';
 import style from './VirtualList.css';
+import { useContainerHeight, useOptions } from './VirtualList.service';
 
 export interface IVirtualListOptions {
   height: number;
@@ -42,53 +43,17 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
   private dataReference: T[] = [];
   // container dom instance
   private virtualListRef = React.createRef<HTMLDivElement>();
-  // container height
-  private containerHeight$ = new BehaviorSubject<number>(0);
   // last first index of data for the first element of the virtual list
   private lastFirstIndex = -1;
   // record the position of last scroll
   private lastScrollPos = 0;
-  // options$ to keep the latest options from the input
-  private options$ = new ReplaySubject<IVirtualListOptions>(1);
 
   private subs = new Subscription();
 
   componentDidMount() {
     const virtualListElm = this.virtualListRef.current as HTMLElement;
-
-    this.subs.add(
-      this.props.options$
-        .pipe(
-          tap(options => {
-            if (options.height === undefined) {
-              throw new Error('Vist needs a height property in options$');
-            }
-          }),
-          map(options => {
-            const opt: IVirtualListOptions = Object.assign({}, options);
-            opt.sticky = opt.sticky === undefined ? true : opt.sticky;
-            opt.spare = opt.spare === undefined ? 3 : opt.spare;
-            opt.startIndex = opt.startIndex === undefined ? 0 : opt.startIndex;
-            opt.resize = opt.resize === undefined ? true : opt.resize;
-
-            return opt;
-          })
-        )
-        .subscribe(opt => this.options$.next(opt))
-    );
-
-    // window resize
-    this.subs.add(
-      fromEvent(window, 'resize')
-        .pipe(
-          withLatestFrom(this.options$),
-          skipWhile(([_, options]) => !options.resize),
-          startWith(null),
-          debounceTime(200),
-          map(() => this.containerHeight$.next(virtualListElm.clientHeight))
-        )
-        .subscribe()
-    );
+    const options$ = useOptions(this.props.options$);
+    const containerHeight$ = useContainerHeight(this.virtualListRef, options$);
 
     // scroll events
     const scrollEvent$ = fromEvent(virtualListElm, 'scroll').pipe(
@@ -100,7 +65,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
     // scroll to the given position
     this.subs.add(
-      this.options$
+      options$
         .pipe(
           filter(option => option.startIndex !== undefined),
           map(option => option.startIndex! * option.height)
@@ -113,7 +78,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     this.subs.add(
       this.props.data$
         .pipe(
-          withLatestFrom(this.options$),
+          withLatestFrom(options$),
           filter(([_, options]) => Boolean(options.sticky))
         )
         .subscribe(() => setTimeout(() => virtualListElm.scrollTop = 0))
@@ -127,12 +92,12 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // actual rows
-    const actualRows$ = combineLatest(this.containerHeight$, this.options$).pipe(
+    const actualRows$ = combineLatest(containerHeight$, options$).pipe(
       map(([ch, option]) => Math.ceil(ch / option.height) + (option.spare || 3))
     );
 
     // data indexes in view
-    const indexes$ = combineLatest(scrollTop$, this.options$).pipe(
+    const indexes$ = combineLatest(scrollTop$, options$).pipe(
       // the index of the top elements of the current list
       map(([st, options]) => Math.floor((st as any) / options.height))
     );
@@ -155,7 +120,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // data slice in the view
-    const dataInViewSlice$ = combineLatest(this.props.data$, this.options$, shouldUpdate$).pipe(
+    const dataInViewSlice$ = combineLatest(this.props.data$, options$, shouldUpdate$).pipe(
       withLatestFrom(scrollDirection$, actualRows$),
       map(([[data, options, [firstIndex, lastIndex]], dir, actualRows]) => {
         const dataSlice = this.stateDataSnapshot;
@@ -195,7 +160,7 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
     );
 
     // total height of the virtual list
-    const scrollHeight$ = combineLatest(this.props.data$, this.options$).pipe(
+    const scrollHeight$ = combineLatest(this.props.data$, options$).pipe(
       map(([data, option]) => data.length * option.height)
     );
 
@@ -209,8 +174,6 @@ export class VirtualList<T> extends React.Component<Readonly<IVirtualListProps<T
 
   componentWillUnmount() {
     this.subs.unsubscribe();
-    this.containerHeight$.complete();
-    this.options$.complete();
   }
 
   render() {
