@@ -21,7 +21,10 @@ class App extends Component {
   componentDidMount() {
     fetch('https://jsonplaceholder.typicode.com/photos')
       .then(res => res.json())
-      .then(data => this.data$.next(data))
+      .then(data => {
+        this.data$.next(data);
+        this.options$.next({ height: 180, startIndex: 3000 });
+      })
       .catch(console.error);
 
     combineLatest([this.data$, this.search$]).pipe(
@@ -33,10 +36,7 @@ class App extends Component {
 
         return item.id.toString().includes(keyWord);
       }) || [])
-    ).subscribe(data => {
-      this.state.data.next(data);
-      this.options$.next({ height: 180, startIndex: 3000 });
-    });
+    ).subscribe(data => this.state.data.next(data));
   }
 
   onSearch(e) {
@@ -60,6 +60,9 @@ class App extends Component {
             data$={this.state.data}
             options$={this.options$}
             style={{ height: '70vh' }}
+            className="custom-class"
+            keepDom={false}
+            uniqKey="id"
           >
             {item => (
               <div className="card">
